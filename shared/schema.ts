@@ -299,7 +299,7 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975), // 9.75% stored as basis points (975) or *100
   maturityValue: integer("maturity_value").notNull(),
   commencementDate: timestamp("commencement_date").notNull().defaultNow(),
-  redemptionDate: timestamp("redemption_date").notNull(),
+  redemptionDate: timestamp("redemption_date").notNull().defaultNow(),
   status: text("status").notNull().default("draft"), // draft, sent, accepted
   createdAt: timestamp("created_at").defaultNow(),
   userId: integer("user_id").references(() => users.id),

@@ -625,8 +625,8 @@ export class DatabaseStorage implements IStorage {
       .insert(cdnQuotations)
       .values({
         ...insertQuotation,
-        commencementDate: insertQuotation.commencementDate ? new Date(insertQuotation.commencementDate) : new Date(),
-        redemptionDate: insertQuotation.redemptionDate ? new Date(insertQuotation.redemptionDate) : new Date(),
+        commencementDate: insertQuotation.commencementDate ? new Date(insertQuotation.commencementDate as string) : new Date(),
+        redemptionDate: insertQuotation.redemptionDate ? new Date(insertQuotation.redemptionDate as string) : new Date(),
       } as any)
       .returning();
     return quotation;
