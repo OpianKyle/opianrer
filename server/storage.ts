@@ -623,7 +623,11 @@ export class DatabaseStorage implements IStorage {
   async createCdnQuotation(insertQuotation: InsertCdnQuotation): Promise<CdnQuotation> {
     const [quotation] = await db
       .insert(cdnQuotations)
-      .values([insertQuotation])
+      .values({
+        ...insertQuotation,
+        commencementDate: insertQuotation.commencementDate ? new Date(insertQuotation.commencementDate) : new Date(),
+        redemptionDate: insertQuotation.redemptionDate ? new Date(insertQuotation.redemptionDate) : new Date(),
+      } as any)
       .returning();
     return quotation;
   }
