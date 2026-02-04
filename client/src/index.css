@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.py-6 {
+    padding-top: 1.5rem;
+    padding-bottom: 1.9rem;
+}
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(210, 11%, 20%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(0, 0%, 45%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 11%, 20%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 11%, 20%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(142, 76%, 36%);
+  --secondary-foreground: hsl(355, 7%, 97%);
+  --accent: hsl(324, 100%, 65%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --warning: hsl(43, 96%, 56%);
+  --warning-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(210, 11%, 20%);
+  --radius: 0.5rem;
+  --text-primary: hsl(210, 11%, 20%);
+  --sidebar-background: hsl(0, 0%, 100%);
+  --sidebar-foreground: hsl(210, 11%, 20%);
+  --sidebar-primary: hsl(207, 90%, 54%);
+  --sidebar-primary-foreground: hsl(210, 40%, 98%);
+  --sidebar-accent: hsl(210, 40%, 96%);
+  --sidebar-accent-foreground: hsl(210, 11%, 20%);
+  --sidebar-border: hsl(214, 32%, 91%);
+  --sidebar-ring: hsl(210, 11%, 20%);
+  
+  /* Theme Variables */
+  --theme-primary: #0073EA;
+  --theme-secondary: #00C875;
+  --theme-accent: #FF6B6B;
+  --theme-background: #FFFFFF;
+  --theme-surface: #F8FAFC;
+  --theme-text: #1E293B;
+  --theme-textSecondary: #64748B;
+  --theme-border: #E2E8F0;
+  --theme-gradient: linear-gradient(135deg, #0073EA 0%, #00C875 100%);
+  --theme-glassBg: rgba(248, 250, 252, 0.9);
+}
+
+.dark {
+  --background: hsl(222, 84%, 5%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 33%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 5%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 5%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 33%, 17%);
+  --input: hsl(217, 33%, 17%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(142, 76%, 36%);
+  --secondary-foreground: hsl(355, 7%, 97%);
+  --accent: hsl(324, 100%, 65%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --warning: hsl(43, 96%, 56%);
+  --warning-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(212, 12%, 83%);
+  --text-primary: hsl(210, 40%, 98%);
+  --sidebar-background: hsl(222, 84%, 5%);
+  --sidebar-foreground: hsl(210, 40%, 98%);
+  --sidebar-primary: hsl(207, 90%, 54%);
+  --sidebar-primary-foreground: hsl(210, 40%, 98%);
+  --sidebar-accent: hsl(217, 33%, 17%);
+  --sidebar-accent-foreground: hsl(210, 40%, 98%);
+  --sidebar-border: hsl(217, 33%, 17%);
+  --sidebar-ring: hsl(212, 12%, 83%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    font-family: 'Inter', 'Roboto', sans-serif;
+    background-color: var(--theme-background);
+    color: var(--theme-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .nav-item {
+    @apply flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition-colors;
+  }
+
+  .nav-item:hover {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  .nav-item.active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .nav-item.active:hover {
+    @apply bg-primary opacity-90;
+  }
+  
+  /* Theme-aware utility classes */
+  .theme-bg {
+    background-color: var(--theme-background);
+  }
+
+  .theme-surface {
+    background-color: var(--theme-surface);
+  }
+
+  .theme-text {
+    color: var(--theme-text);
+  }
+
+  .theme-text-secondary {
+    color: var(--theme-textSecondary);
+  }
+
+  .theme-border {
+    border-color: var(--theme-border);
+  }
+
+  .theme-gradient {
+    background: var(--theme-gradient);
+  }
+
+  .theme-glass {
+    background: var(--theme-glassBg);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Theme-aware components */
+  .theme-card {
+    background-color: var(--theme-surface);
+    border-color: var(--theme-border);
+    color: var(--theme-text);
+  }
+
+  .theme-button-primary {
+    background: var(--theme-gradient);
+    color: white;
+    border: none;
+  }
+
+  .theme-button-primary:hover {
+    filter: brightness(1.1);
+  }
+
+  /* Smooth theme transitions */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  .nav-item i {
+    @apply text-sm;
+  }
+
+  .nav-item span {
+    @apply text-sm font-medium;
+  }
+
+  .crm-bg {
+    background-color: hsl(210, 40%, 96%);
+  }
+
+  .text-textPrimary {
+    color: var(--text-primary);
+  }
+
+  .bg-warning {
+    background-color: var(--warning);
+  }
+
+  .text-warning {
+    color: var(--warning);
+  }
+
+  .text-warning-foreground {
+    color: var(--warning-foreground);
+  }
+
+  .border-warning {
+    border-color: var(--warning);
+  }
+}
