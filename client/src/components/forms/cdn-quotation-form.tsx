@@ -154,8 +154,8 @@ export default function CdnQuotationForm({ clientId, onSuccess }: CdnQuotationFo
     y = addKeyValue("Liquidity", "None", y);
     
     y += 6;
-    y = addKeyValue("Contract Start date", format(new Date(data.commencementDate || new Date()), "01-Nov-25"), y);
-    y = addKeyValue("Exit date", format(new Date(data.redemptionDate || new Date()), "31-Oct-26"), y);
+    y = addKeyValue("Contract Start date", format(new Date(data.commencementDate || new Date()), "dd-MMM-yy"), y);
+    y = addKeyValue("Exit date", format(new Date(data.redemptionDate || new Date()), "dd-MMM-yy"), y);
     y = addKeyValue("Return Cycle", "Annually", y);
     y = addKeyValue("Capital allocation", "100%", y);
 

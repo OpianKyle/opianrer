@@ -806,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       yPos -= 40; // Extra spacing before date
-      const dateStr = quotation.calculationDate ? format(new Date(quotation.calculationDate), 'dd MMMM yyyy') : format(new Date(), 'dd MMMM yyyy');
+      const dateStr = quotation.calculationDate ? format(new Date(quotation.calculationDate), 'dd-MMM-yy') : format(new Date(), 'dd-MMM-yy');
       page1.drawText(`Date: ${dateStr}`, { x: leftMargin, y: yPos, size: 11, font });
 
       yPos -= 40;
