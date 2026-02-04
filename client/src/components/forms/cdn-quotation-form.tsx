@@ -184,6 +184,19 @@ export default function CdnQuotationForm({ clientId, onSuccess }: CdnQuotationFo
     // Page 2: Conditions and Legal
     doc.addPage();
     y = 20;
+    y = addSectionHeader("Modelled Fund Choices", y);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['ISIN', 'Fund Name', 'Type', 'Split']],
+      body: [
+        ['SIN Code: DG00U67BC567', 'WSF Global Equity Fund', 'Risk Adverse', '100%']
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [100, 100, 100] }
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+
     y = addSectionHeader("Conditions", y);
     const conditions = [
       "1. To effectively evaluate this product against comparable alternatives, it is essential to analyze and contrast its risk reward profile with those of similar products offering analogous risk reward structures.",
@@ -192,28 +205,70 @@ export default function CdnQuotationForm({ clientId, onSuccess }: CdnQuotationFo
       "4. The applicant acknowledges understanding of the complexities involving this investment as well as the lock-in periods contained in the investment.",
       "5. The applicant understands that a loan agreement will come into existence after signature of this quotation and that returns paid are mirrored on the performance of the selected fund above.",
       "6. The applicant understands the zero liquidity nature of this investment and has ensured that he has enough liquid investments or savings to ensure liquidity during this investment.",
-      "7. The applicant understands that the directors or trustees of company funds, in their collective capacity, may limit, withhold, defer or reduce payments or payouts as necessary at moment's notice to safeguard the company's liquidity requirements and ensure financial stability."
+      "7. The applicant understands that the directors or trustees of company funds, in their collective capacity, may limit, withhold, defer or reduce payments or payouts as necessary at moment's notice to safeguard the company's liquidity requirements and ensure financial stability.",
+      "8. The individual, individuals or organisation's entering into this agreement acknowledges and understands that this is a fixed-term contract, as specified in the duration outlined above, the term \"Exit Date\" refers to the agreed-upon end date of the agreement.",
+      "9. The applicant understands that if shares are issued under this agreement, the shares are issued for security only and are returnable when the applicant is paid back his invested capital.",
+      "10. The applicant retains the option to convert their capital to fixed shares at exit date; whereafter the par value of the converted shares will be based on a comprehensive company's valuation at the time of exit."
     ];
     doc.setFontSize(8);
     conditions.forEach(c => {
       const lines = doc.splitTextToSize(c, contentWidth);
+      if (y + (lines.length * 4) > 280) {
+        doc.addPage();
+        y = 20;
+      }
       doc.text(lines, margin, y);
       y += (lines.length * 4) + 2;
     });
 
     y += 10;
     y = addSectionHeader("Validity", y);
-    doc.text("This offer remains valid for a period of 14 days from the date of issuance...", margin, y);
-    y += 10;
-    y = addSectionHeader("Prepared By", y);
-    y = addKeyValue("Offer Prepared By:", data.preparedByName || "", y);
-    y = addKeyValue("Cell:", data.preparedByCell || "", y);
-    y = addKeyValue("Email:", data.preparedByEmail || "", y);
+    const validityText = "This offer remains valid for a period of 14 days from the date of issuance, it is imperative that the receipt of funds occur within this specific time frame. All required documentation must be completed, and funds transfers finalized on or before expiration of the offers validity period. Should any information remain outstanding or incomplete, funds will be processed, a new offer must be issued and duly executed before the terms can be formally accepted by the company.";
+    const validityLines = doc.splitTextToSize(validityText, contentWidth);
+    doc.text(validityLines, margin, y);
+    y += (validityLines.length * 4) + 10;
 
-    y += 20;
-    doc.rect(margin, y, contentWidth, 30);
-    doc.text("Agreement number: " + (data.clientNumber || ""), margin + 5, y + 10);
-    doc.text("Signature of investor: _________________________", margin + 5, y + 25);
+    y = addSectionHeader("Placement and Admin fees", y);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Description', 'Frequency', 'Percentage']],
+      body: [
+        ['Placement fee', 'Once Off', '1.00%'],
+        ['Admin Fees', 'Once Off', '0.50%']
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [100, 100, 100] }
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    y = addSectionHeader("Commission", y);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Description', 'Frequency', 'Percentage']],
+      body: [
+        ['Commission', 'First Year', '0.50%']
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [100, 100, 100] }
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    y = addSectionHeader("Agreement Details", y);
+    y = addKeyValue("Agreement number:", data.clientNumber || "", y);
+    y = addKeyValue("Investor Name:", data.clientName || "", y);
+    y += 10;
+    doc.rect(margin, y, contentWidth, 20);
+    doc.text("Signature of investor: _________________________________", margin + 5, y + 12);
+    y += 30;
+
+    y = addSectionHeader("SUPPORT DOCUMENTATION", y);
+    const docs = ["[ ] Application form", "[ ] Copy of Identity Document / Passport", "[ ] Proof of Address", "[ ] Bank Statement"];
+    docs.forEach(d => {
+      doc.text(d, margin, y);
+      y += 6;
+    });
     
     doc.save(`CDN_Quotation_${data.clientName}.pdf`);
   };
