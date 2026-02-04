@@ -12,6 +12,11 @@ import fs from "fs";
 import { setupAuth, requireAuth } from "./auth";
 import { sendAppointmentConfirmation, sendAppointmentUpdate, sendCdnQuotationEmail } from "./email";
 import { format } from "date-fns";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -616,6 +621,239 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Email sending error:", error);
       res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
+  // Generate PDF from quotation
+  app.post("/api/cdn-quotations/:id/pdf", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const quotation = await db.select().from(cdnQuotations).where(eq(cdnQuotations.id, id)).limit(1).then(rows => rows[0]);
+
+      if (!quotation) {
+        return res.status(404).json({ error: "Quotation not found" });
+      }
+
+      // === PDF Setup ===
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const leftMargin = 72; // 1 inch margin
+      const rightMargin = 72;
+      const pageWidth = 595.28;
+      const contentWidth = pageWidth - leftMargin - rightMargin;
+
+      // Load logo image
+      let logoImage: any = null;
+      try {
+        const logoPath = path.join(__dirname, "../attached_assets/image_1756901569236_1770200770187.png");
+        const logoBytes = await fs.promises.readFile(logoPath);
+        logoImage = await pdfDoc.embedPng(logoBytes);
+      } catch (error) {
+        console.warn("Could not load logo image:", error);
+      }
+
+
+      // === Helper Functions ===
+      const drawJustifiedText = (
+        page: any,
+        text: string,
+        x: number,
+        y: number,
+        maxWidth: number,
+        font: any,
+        fontSize: number = 10,
+        lineSpacing: number = 17 // 1.5 line spacing
+      ) => {
+        text = text.replace(/\s+/g, " ").trim();
+        const words = text.split(" ");
+        let lines: string[][] = [];
+        let currentLine: string[] = [];
+
+        words.forEach((word) => {
+          const testLine = [...currentLine, word];
+          const textWidth = font.widthOfTextAtSize(testLine.join(" "), fontSize);
+          if (textWidth > maxWidth && currentLine.length > 0) {
+            lines.push(currentLine);
+            currentLine = [word];
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine.length > 0) lines.push(currentLine);
+
+        lines.forEach((lineWords, i) => {
+          const lineText = lineWords.join(" ");
+          const lineWidth = font.widthOfTextAtSize(lineText, fontSize);
+
+          if (i === lines.length - 1 || lineWords.length === 1) {
+            // Last line or single word - left align
+            page.drawText(lineText, { x, y, size: fontSize, font, color: rgb(0, 0, 0) });
+          } else {
+            // Justify text by distributing extra space
+            const extraSpace = (maxWidth - lineWidth) / (lineWords.length - 1);
+            let cursorX = x;
+            lineWords.forEach((word, wordIndex) => {
+              page.drawText(word, { x: cursorX, y, size: fontSize, font, color: rgb(0, 0, 0) });
+              if (wordIndex < lineWords.length - 1) {
+                cursorX += font.widthOfTextAtSize(word, fontSize) + font.widthOfTextAtSize(" ", fontSize) + extraSpace;
+              }
+            });
+          }
+          y -= lineSpacing;
+        });
+
+        return y;
+      };
+
+      const addFooter = (page: any) => {
+        const footerY = 50;
+        const footerText = [
+          "Opian Capital (Pty) Ltd is Licensed as a Juristic Representative with FSP No: 50974",
+          "Company Registration Number: 2022/272376/07 FSP No: 50974", 
+          "Company Address: 260 Uys Krige Drive, Loevenstein, Bellville, 7530, Western Cape",
+          "Tel: 0861 263 346 | Email: info@opianfsgroup.com | Website: www.opianfsgroup.com"
+        ];
+        
+        footerText.forEach((line, i) => {
+          const textWidth = font.widthOfTextAtSize(line, 8);
+          const centerX = pageWidth / 2 - textWidth / 2;
+          page.drawText(line, { 
+            x: centerX, 
+            y: footerY + (footerText.length - 1 - i) * 10, 
+            size: 8, 
+            font, 
+            color: rgb(0, 0, 0) 
+          });
+        });
+      };
+
+      const addLogo = (page: any) => {
+        if (logoImage) {
+          const logoWidth = 170;
+          const logoHeight = 50;
+          const x = pageWidth - logoWidth - 25;
+          const y = 780;
+          
+          page.drawImage(logoImage, {
+            x,
+            y,
+            width: logoWidth,
+            height: logoHeight
+          });
+        }
+      };
+
+      // === COVER PAGE ===
+      const coverPage = pdfDoc.addPage([595.28, 841.89]);
+      
+      // Add logo on the left side - larger for cover
+      if (logoImage) {
+        const logoWidth = 200;
+        const logoHeight = 58;
+        const logoX = 60;
+        const logoY = 650;
+        
+        coverPage.drawImage(logoImage, {
+          x: logoX,
+          y: logoY,
+          width: logoWidth,
+          height: logoHeight
+        });
+      }
+      
+      // Add "PRIVATE EQUITY PROPOSAL" text below logo
+      const coverTitle = "PRIVATE EQUITY PROPOSAL";
+      coverPage.drawText(coverTitle, { 
+        x: 60, 
+        y: 520, 
+        size: 22, 
+        font: boldFont,
+        color: rgb(0, 0, 0)
+      });
+
+      // === PAGE 1: MAIN CONTENT ===
+      const page1 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page1);
+      addLogo(page1);
+      let yPos = 680;
+
+      // Title
+      const pageTitle = `Turning R${quotation.investmentAmount.toLocaleString()} into R${quotation.maturityValue.toLocaleString()} in ${quotation.term} Years`;
+      page1.drawText(pageTitle, { 
+        x: leftMargin, 
+        y: yPos, 
+        size: 14, 
+        font: boldFont 
+      });
+
+      yPos -= 40;
+
+      // Client information
+      page1.drawText("Prepared for:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      yPos -= 25;
+      page1.drawText(quotation.clientName, { x: leftMargin, y: yPos, size: 11, font });
+      yPos -= 40;
+
+      page1.drawText("Address:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      yPos -= 25;
+      const addressLines = quotation.clientAddress.split("\n");
+      addressLines.forEach(line => {
+        if (line.trim()) {
+          page1.drawText(line, { x: leftMargin, y: yPos, size: 11, font });
+          yPos -= 20;
+        }
+      });
+
+      yPos -= 40; // Extra spacing before date
+      const dateStr = quotation.calculationDate ? format(new Date(quotation.calculationDate), 'dd MMMM yyyy') : format(new Date(), 'dd MMMM yyyy');
+      page1.drawText(`Date: ${dateStr}`, { x: leftMargin, y: yPos, size: 11, font });
+
+      yPos -= 40;
+      page1.drawText(`Dear ${quotation.clientName}`, { x: leftMargin, y: yPos, size: 11, font });
+
+      yPos -= 30;
+      page1.drawText("We thank you for your interest in our Private Equity Proposal", { 
+        x: leftMargin, 
+        y: yPos, 
+        size: 11, 
+        font 
+      });
+
+      yPos -= 40;
+
+      // Executive Summary
+      page1.drawText("Executive Summary", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 25;
+
+      const executiveSummary = `This proposal outlines a strategic private equity (PE) investment strategy designed to grow an initial capital of R${quotation.investmentAmount.toLocaleString()} over a ${quotation.term}-year horizon. By leveraging high-growth private equity opportunities in carefully selected industries, we aim to maximize returns while mitigating risks through diversification and expert fund management.`;
+      yPos = drawJustifiedText(page1, executiveSummary, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 35;
+
+      // Investment Summary Section
+      page1.drawText("Investment Summary", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 25;
+
+      const summaryData = [
+        ["Target Investment Value:", `R${quotation.maturityValue.toLocaleString()}`],
+        ["Interest Rate:", `${quotation.interestRate}%`],
+        ["Term:", `${quotation.term} Years`]
+      ];
+
+      summaryData.forEach(([label, value]) => {
+        page1.drawText(label, { x: leftMargin, y: yPos, size: 11, font: boldFont });
+        page1.drawText(value, { x: leftMargin + 200, y: yPos, size: 11, font });
+        yPos -= 20;
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=Quotation_${id}.pdf`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
     }
   });
 
