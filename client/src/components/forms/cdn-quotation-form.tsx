@@ -99,69 +99,123 @@ export default function CdnQuotationForm({ clientId, onSuccess }: CdnQuotationFo
 
   const generatePDF = (data: InsertCdnQuotation) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
     
-    // Header
+    const addSectionHeader = (text: string, y: number) => {
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y, contentWidth, 8, 'F');
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(text.toUpperCase(), margin + 2, y + 6);
+      return y + 12;
+    };
+
+    const addKeyValue = (label: string, value: string, y: number) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(label, margin, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(value, margin + 60, y);
+      return y + 6;
+    };
+
+    // Page 1: Header and Summary
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note 1 Year Term", 105, 15, { align: "center" });
+    doc.text("Quotation for FlexMax Capital Appreciator Fixed Deposit Note 1 Year Term", pageWidth / 2, 15, { align: "center" });
     
-    doc.setFontSize(10);
     let y = 30;
-    
-    // Client Info
-    doc.text("CLIENT NUMBER:", 20, y);
-    doc.text(data.clientNumber || "", 70, y);
+    y = addKeyValue("Date of Offer:", format(new Date(data.calculationDate || new Date()), "yyyy/MM/dd"), y);
+    y += 4;
+    y = addKeyValue("Offered to:", data.offeredTo || "", y);
+    y = addKeyValue("Address:", data.clientAddress || "", y);
     y += 10;
+    y = addKeyValue("Telephone:", data.clientPhone || "", y);
+    y = addKeyValue("Email:", data.preparedByEmail || "", y);
     
-    doc.text("CLIENT NAME:", 20, y);
-    doc.text(data.clientName || "", 70, y);
-    y += 7;
-    doc.text("ADDRESS:", 20, y);
-    const addressLines = doc.splitTextToSize(data.clientAddress || "", 100);
-    doc.text(addressLines, 70, y);
-    y += addressLines.length * 7;
-    
-    doc.text("OFFERED TO:", 20, y);
-    doc.text(data.offeredTo || "", 70, y);
     y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.text(`Dear ${data.clientName}`, margin, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text("We take pleasure in submitting the following proposal to you:", margin, y);
     
-    doc.text("INVESTMENT AMOUNT:", 20, y);
-    doc.text(`R ${data.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 70, y);
+    y += 10;
+    y = addSectionHeader("Investment summary", y);
+    y = addKeyValue("Investment amount", `R ${data.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, y);
+    y = addKeyValue("Amount allocated with enhancement", `R ${data.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, y);
+    y = addKeyValue("Term in years", data.term.toString(), y);
+    y = addKeyValue("Commencement date", format(new Date(data.commencementDate || new Date()), "dd-MMM-yy"), y);
+    y = addKeyValue("Percentage returned first year", `${data.interestRate}%`, y);
+    const incomeFirstYear = (data.investmentAmount * (data.interestRate / 100));
+    y = addKeyValue("Income allocated to capital in first year", `R ${incomeFirstYear.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, y);
+    y = addKeyValue("Liquidity", "None", y);
+    
+    y += 6;
+    y = addKeyValue("Contract Start date", format(new Date(data.commencementDate || new Date()), "01-Nov-25"), y);
+    y = addKeyValue("Exit date", format(new Date(data.redemptionDate || new Date()), "31-Oct-26"), y);
+    y = addKeyValue("Return Cycle", "Annually", y);
+    y = addKeyValue("Capital allocation", "100%", y);
+
+    y += 15;
+    doc.setFontSize(8);
+    doc.text("Registered Address: 220 Ashwood Avenue, Waterkloof Glen, 0181, Pretoria", margin, y);
+    doc.text("Fund Advice: Sovereign Trust International Limited", pageWidth - margin, y, { align: "right" });
+    y += 4;
+    doc.text("Email: info@opiansapital.com Website: www.opiansapital.com", margin, y);
+    doc.text("Sovereign Place, 117 Main Street, GX11 1AA, Gibraltar, GI", pageWidth - margin, y, { align: "right" });
+
+    y += 10;
+    y = addSectionHeader("Income projections", y);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Year', 'Capital Value', 'Return Forecast']],
+      body: [
+        ['Current', `R ${data.investmentAmount.toLocaleString()}`, 'Projected: 9.75%'],
+        ['1', `R ${data.maturityValue?.toLocaleString()}`, `R ${incomeFirstYear.toLocaleString()}`]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [100, 100, 100] }
+    });
+
+    // Page 2: Conditions and Legal
+    doc.addPage();
+    y = 20;
+    y = addSectionHeader("Conditions", y);
+    const conditions = [
+      "1. To effectively evaluate this product against comparable alternatives, it is essential to analyze and contrast its risk reward profile with those of similar products offering analogous risk reward structures.",
+      "2. This offer involves the purchase of Fixed Deposit Notes (FDN's) in private equity. Given the inherent risks associated we strongly recommend independent advice before making any commitment.",
+      "3. This offer contains no guarantees beyond those expressly stated herein. Upon signing, the terms outlined in this offer shall constitute a legally binding agreement between the client and the company.",
+      "4. The applicant acknowledges understanding of the complexities involving this investment as well as the lock-in periods contained in the investment.",
+      "5. The applicant understands that a loan agreement will come into existence after signature of this quotation and that returns paid are mirrored on the performance of the selected fund above.",
+      "6. The applicant understands the zero liquidity nature of this investment and has ensured that he has enough liquid investments or savings to ensure liquidity during this investment.",
+      "7. The applicant understands that the directors or trustees of company funds, in their collective capacity, may limit, withhold, defer or reduce payments or payouts as necessary at moment's notice to safeguard the company's liquidity requirements and ensure financial stability."
+    ];
+    doc.setFontSize(8);
+    conditions.forEach(c => {
+      const lines = doc.splitTextToSize(c, contentWidth);
+      doc.text(lines, margin, y);
+      y += (lines.length * 4) + 2;
+    });
+
+    y += 10;
+    y = addSectionHeader("Validity", y);
+    doc.text("This offer remains valid for a period of 14 days from the date of issuance...", margin, y);
+    y += 10;
+    y = addSectionHeader("Prepared By", y);
+    y = addKeyValue("Offer Prepared By:", data.preparedByName || "", y);
+    y = addKeyValue("Cell:", data.preparedByCell || "", y);
+    y = addKeyValue("Email:", data.preparedByEmail || "", y);
+
     y += 20;
+    doc.rect(margin, y, contentWidth, 30);
+    doc.text("Agreement number: " + (data.clientNumber || ""), margin + 5, y + 10);
+    doc.text("Signature of investor: _________________________", margin + 5, y + 25);
     
-    // Plan Details
-    doc.text("DATE OF CALCULATION:", 20, y);
-    doc.text(format(new Date(data.calculationDate || new Date()), "yyyy/MM/dd"), 70, y);
-    y += 7;
-    
-    doc.text("COMMENCEMENT DATE OF PLAN:", 20, y);
-    doc.text(format(new Date(data.commencementDate || new Date()), "yyyy/MM/dd"), 70, y);
-    y += 7;
-    
-    doc.text("TERM IN YEARS:", 20, y);
-    doc.text(data.term.toString(), 70, y);
-    y += 7;
-    
-    doc.text("REDEMPTION DATE:", 20, y);
-    doc.text(format(new Date(data.redemptionDate || new Date()), "yyyy/MM/dd"), 70, y);
-    y += 20;
-    
-    // Preparation Info
-    doc.text("PREPARED BY:", 20, y);
-    doc.text(data.preparedByName || "", 70, y);
-    y += 7;
-    if (data.preparedByCell) {
-      doc.text(`Cell: ${data.preparedByCell}`, 70, y);
-      y += 7;
-    }
-    if (data.preparedByOffice) {
-      doc.text(`Office: ${data.preparedByOffice}`, 70, y);
-      y += 7;
-    }
-    if (data.preparedByEmail) {
-      doc.text(`Email: ${data.preparedByEmail}`, 70, y);
-    }
-    
-    doc.save(`CDN_Quotation_${clientId}.pdf`);
+    doc.save(`CDN_Quotation_${data.clientName}.pdf`);
   };
 
   return (
