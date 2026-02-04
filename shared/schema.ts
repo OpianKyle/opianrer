@@ -297,6 +297,7 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   clientName: text("client_name").notNull().default(""),
   clientAddress: text("client_address").notNull().default(""),
   clientPhone: text("client_phone"),
+  offeredTo: text("offered_to"),
   investmentAmount: integer("investment_amount").notNull(),
   term: integer("term").notNull().default(1), // Years
   interestRate: integer("interest_rate").notNull(), // percentage
@@ -323,9 +324,10 @@ export const insertCdnQuotationSchema = createInsertSchema(cdnQuotations).omit({
   interestRate: z.coerce.number().min(0).max(100, "Interest rate must be between 0 and 100"),
   yearlyDivAllocation: z.coerce.number().optional().default(9.75),
   maturityValue: z.coerce.number().optional(),
-  calculationDate: z.string().or(z.date()).optional(),
-  commencementDate: z.string().or(z.date()).optional(),
-  redemptionDate: z.string().or(z.date()).optional(),
+  calculationDate: z.coerce.date().optional(),
+  commencementDate: z.coerce.date().optional(),
+  redemptionDate: z.coerce.date().optional(),
+  term: z.coerce.number().min(1, "Term is required"),
 });
 
 export type InsertCdnQuotation = z.infer<typeof insertCdnQuotationSchema>;

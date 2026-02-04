@@ -576,8 +576,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!result.success) {
         return res.status(400).json({ message: "Invalid quotation data", errors: result.error.issues });
       }
-      const quotationData = { ...result.data, userId: req.user.id };
-      const quotation = await storage.createCdnQuotation(quotationData);
+      const quotationData = { 
+        ...result.data, 
+        userId: req.user.id,
+        calculationDate: result.data.calculationDate ? new Date(result.data.calculationDate) : undefined,
+        commencementDate: result.data.commencementDate ? new Date(result.data.commencementDate) : undefined,
+        redemptionDate: result.data.redemptionDate ? new Date(result.data.redemptionDate) : undefined,
+      };
+      const quotation = await storage.createCdnQuotation(quotationData as any);
       res.status(201).json(quotation);
     } catch (error) {
       res.status(500).json({ message: "Failed to create quotation" });
