@@ -293,13 +293,22 @@ export const insertKanbanCardSchema = createInsertSchema(kanbanCards).omit({
 export const cdnQuotations = pgTable("cdn_quotations", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").references(() => clients.id),
+  clientNumber: text("client_number").notNull().default(""),
+  clientName: text("client_name").notNull().default(""),
+  clientAddress: text("client_address").notNull().default(""),
+  clientPhone: text("client_phone"),
   investmentAmount: integer("investment_amount").notNull(),
   term: integer("term").notNull().default(1), // Years
   interestRate: integer("interest_rate").notNull(), // percentage
-  yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975), // 9.75% stored as basis points (975) or *100
+  yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975), // 9.75%
   maturityValue: integer("maturity_value").notNull(),
+  calculationDate: timestamp("calculation_date").notNull().defaultNow(),
   commencementDate: timestamp("commencement_date").notNull().defaultNow(),
   redemptionDate: timestamp("redemption_date").notNull().defaultNow(),
+  preparedByName: text("prepared_by_name"),
+  preparedByCell: text("prepared_by_cell"),
+  preparedByOffice: text("prepared_by_office"),
+  preparedByEmail: text("prepared_by_email"),
   status: text("status").notNull().default("draft"), // draft, sent, accepted
   createdAt: timestamp("created_at").defaultNow(),
   userId: integer("user_id").references(() => users.id),
@@ -314,6 +323,7 @@ export const insertCdnQuotationSchema = createInsertSchema(cdnQuotations).omit({
   interestRate: z.coerce.number().min(0).max(100, "Interest rate must be between 0 and 100"),
   yearlyDivAllocation: z.coerce.number().optional().default(9.75),
   maturityValue: z.coerce.number().optional(),
+  calculationDate: z.string().or(z.date()).optional(),
   commencementDate: z.string().or(z.date()).optional(),
   redemptionDate: z.string().or(z.date()).optional(),
 });

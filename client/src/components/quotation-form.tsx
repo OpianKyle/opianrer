@@ -1,31 +1,41 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCdnQuotationSchema, type InsertCdnQuotation, type Client } from "@shared/schema";
+import { insertCdnQuotationSchema, type InsertCdnQuotation, type Client, type User } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, addYears } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 
 export function QuotationForm({ client }: { client: Client }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [maturityValue, setMaturityValue] = useState<number>(0);
+  const { data: user } = useQuery<User>({ queryKey: ["/api/user"] });
 
   const form = useForm<InsertCdnQuotation>({
     resolver: zodResolver(insertCdnQuotationSchema),
     defaultValues: {
       clientId: client.id,
+      clientNumber: client.idNumber || `OFDN-104-778-00${client.id}`,
+      clientName: `${client.firstName} ${client.surname}`,
+      clientAddress: `${client.physicalAddress || ""}\n${client.physicalPostalCode || ""}`,
+      clientPhone: client.cellPhone || "",
       investmentAmount: 75000,
       term: 1,
       interestRate: 9.75,
       yearlyDivAllocation: 9.75,
+      calculationDate: format(new Date(), "yyyy-MM-dd"),
       commencementDate: format(new Date(), "yyyy-MM-dd"),
       redemptionDate: format(addYears(new Date(), 1), "yyyy-MM-dd"),
+      preparedByName: user ? `${user.firstName} ${user.lastName}` : "",
+      preparedByCell: "",
+      preparedByOffice: "0861 263 346",
+      preparedByEmail: user?.email || "",
     },
   });
 
@@ -36,7 +46,6 @@ export function QuotationForm({ client }: { client: Client }) {
     const amount = Number(investmentAmount) || 0;
     const rate = Number(interestRate) || 0;
     const maturity = amount + (amount * (rate / 100));
-    setMaturityValue(maturity);
     form.setValue("maturityValue", maturity);
   }, [investmentAmount, interestRate, form]);
 
@@ -52,84 +61,163 @@ export function QuotationForm({ client }: { client: Client }) {
   });
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Quotation Tool for FlexMax Capital Appreciator</CardTitle>
+    <Card className="w-full max-w-4xl mx-auto shadow-none border-0">
+      <CardHeader className="text-center border-b mb-6">
+        <CardTitle className="text-xl font-bold uppercase tracking-tight">
+          Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note 1 Year Term
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Client Name</FormLabel>
-                <Input value={`${client.firstName} ${client.surname}`} disabled />
-              </FormItem>
-              <FormField
-                control={form.control}
-                name="investmentAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Investment Amount (R)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="interestRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Interest Rate (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormItem>
-                <FormLabel>Yearly Div Allocation (%)</FormLabel>
-                <Input value="9.75" disabled />
-              </FormItem>
-              <FormField
-                control={form.control}
-                name="commencementDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Commencement Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} value={field.value as string} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="redemptionDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Redemption Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} value={field.value as string} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="pt-4 border-t">
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Estimated Maturity Value:</span>
-                <span>R {maturityValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+              {/* Left Column */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="clientNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Client Number:</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="bg-yellow-200 border-0 h-8 rounded-none font-mono" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="clientName"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-4 space-y-0">
+                      <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold pt-2">Client Name:</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="bg-yellow-200 border-0 h-8 rounded-none" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="clientAddress"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-4 space-y-0">
+                      <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold pt-2">Address:</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} className="bg-yellow-200 border-0 rounded-none resize-none min-h-[120px]" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormItem className="flex items-center gap-4 space-y-0">
+                  <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Offered To:</FormLabel>
+                  <FormControl>
+                    <Input value={form.watch("clientName")} disabled className="bg-yellow-200 border-0 h-8 rounded-none" />
+                  </FormControl>
+                </FormItem>
+
+                <FormField
+                  control={form.control}
+                  name="investmentAmount"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Investment Amount:</FormLabel>
+                      <FormControl>
+                        <div className="relative w-full">
+                          <span className="absolute left-2 top-1.5 text-sm">R</span>
+                          <Input type="number" {...field} className="bg-yellow-200 border-0 h-8 rounded-none pl-6" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="calculationDate"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Date of Calculation:</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="commencementDate"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Commencement Date of Plan:</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="term"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Term in Years:</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} className="bg-yellow-200 border-0 h-8 rounded-none" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="redemptionDate"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Redemption Date:</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="pt-8 space-y-2">
+                  <div className="flex items-start gap-4">
+                    <span className="w-32 uppercase text-xs font-bold pt-1">Prepared By:</span>
+                    <div className="flex-1 text-sm space-y-1">
+                      <Input {...form.register("preparedByName")} className="h-7 border-0 p-0 focus-visible:ring-0" placeholder="Name" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground uppercase">Cell:</span>
+                        <Input {...form.register("preparedByCell")} className="h-7 border-0 p-0 focus-visible:ring-0" placeholder="Cell Number" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground uppercase">Office:</span>
+                        <Input {...form.register("preparedByOffice")} className="h-7 border-0 p-0 focus-visible:ring-0" placeholder="Office Number" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground uppercase">Email:</span>
+                        <Input {...form.register("preparedByEmail")} className="h-7 border-0 p-0 focus-visible:ring-0" placeholder="Email Address" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
-              Generate Quotation
-            </Button>
+
+            <div className="flex justify-end pt-6 border-t">
+              <Button type="submit" size="lg" disabled={mutation.isPending} className="px-12 uppercase font-bold tracking-wider">
+                Generate Quotation
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
