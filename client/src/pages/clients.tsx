@@ -45,7 +45,7 @@ import {
   FileText
 } from "lucide-react";
 import { format } from "date-fns";
-import CdnQuotationForm from "@/components/forms/cdn-quotation-form";
+import { QuotationForm } from "@/components/quotation-form";
 import ComprehensiveClientModal from "@/components/modals/comprehensive-client-modal";
 import CreateAppointmentModal from "@/components/modals/create-appointment-modal";
 import EditClientModal from "@/components/modals/edit-client-modal";
@@ -59,7 +59,8 @@ export default function Clients() {
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
-  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [selectedClientForQuotation, setSelectedClientForQuotation] = useState<Client | null>(null);
+  const [showQuotationForm, setShowQuotationForm] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, themes } = useTheme();
@@ -112,7 +113,7 @@ export default function Clients() {
 
   const getCreatedByName = (userId: number | null) => {
     if (!userId) return "Unknown";
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u: any) => u.id === userId);
     return user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username) : "Unknown";
   };
 
@@ -347,7 +348,7 @@ export default function Clients() {
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-500">
-                        {format(new Date(client.lastContact || client.createdAt), 'MMM d, yyyy')}
+                        {format(new Date(client.lastContact || client.createdAt || new Date()), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell className="text-textPrimary">
                         ${client.value?.toLocaleString() || 0}
@@ -389,11 +390,11 @@ export default function Clients() {
                             size="sm"
                             title="CDN Quotation"
                             onClick={() => {
-                              setSelectedClient(client);
-                              setIsQuotationModalOpen(true);
+                              setSelectedClientForQuotation(client);
+                              setShowQuotationForm(true);
                             }}
                           >
-                            <Plus className="w-4 h-4 text-blue-500" />
+                            <FileText className="w-4 h-4 text-blue-500" />
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -450,19 +451,13 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isQuotationModalOpen} onOpenChange={setIsQuotationModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              CDN Quotation - {selectedClient?.firstName} {selectedClient?.surname}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedClient && (
-            <CdnQuotationForm 
-              clientId={selectedClient.id} 
-              onSuccess={() => setIsQuotationModalOpen(false)} 
-            />
-          )}
+      <Dialog open={showQuotationForm} onOpenChange={setShowQuotationForm}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-0">
+          <div className="max-h-[90vh] overflow-y-auto p-6 bg-white">
+            {selectedClientForQuotation && (
+              <QuotationForm client={selectedClientForQuotation} />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

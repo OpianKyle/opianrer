@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCdnQuotationSchema, type InsertCdnQuotation, type Client, type User } from "@shared/schema";
+import { insertCdnQuotationSchema, type InsertCdnQuotation, type Client, type User, type InterestRate } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
