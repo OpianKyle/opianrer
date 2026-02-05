@@ -100,6 +100,7 @@ export interface IStorage {
   // CDN Quotation methods
   getCdnQuotations(clientId: number): Promise<CdnQuotation[]>;
   createCdnQuotation(quotation: InsertCdnQuotation): Promise<CdnQuotation>;
+  getCdnQuotation(id: number): Promise<CdnQuotation | undefined>;
 }
 
 // DatabaseStorage implementation
@@ -625,11 +626,16 @@ export class DatabaseStorage implements IStorage {
       .insert(cdnQuotations)
       .values({
         ...insertQuotation,
-        commencementDate: insertQuotation.commencementDate ? new Date(insertQuotation.commencementDate as string) : new Date(),
-        redemptionDate: insertQuotation.redemptionDate ? new Date(insertQuotation.redemptionDate as string) : new Date(),
+        commencementDate: insertQuotation.commencementDate ? new Date(insertQuotation.commencementDate as any) : new Date(),
+        redemptionDate: insertQuotation.redemptionDate ? new Date(insertQuotation.redemptionDate as any) : new Date(),
       } as any)
       .returning();
     return quotation;
+  }
+
+  async getCdnQuotation(id: number): Promise<CdnQuotation | undefined> {
+    const [quotation] = await db.select().from(cdnQuotations).where(eq(cdnQuotations.id, id));
+    return quotation || undefined;
   }
 }
 

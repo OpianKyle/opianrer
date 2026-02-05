@@ -112,11 +112,17 @@ export function QuotationForm({ client }: { client: Client }) {
   const mutation = useMutation({
     mutationFn: async (data: InsertCdnQuotation) => {
       const res = await apiRequest("POST", "/api/cdn-quotations", data);
-      return res.json();
+      const quotation = await res.json();
+      
+      // Automatically download PDF
+      window.open(`/api/cdn-quotations/${quotation.id}/download`, "_blank");
+      
+      return quotation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cdn-quotations", client.id] });
-      toast({ title: "Quotation created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents", client.id] });
+      toast({ title: "Quotation created and document saved" });
     },
   });
 

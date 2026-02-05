@@ -542,6 +542,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/cdn-quotations/:id/download", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const quotation = await storage.getCdnQuotation(id);
+      if (!quotation) {
+        return res.status(404).json({ message: "Quotation not found" });
+      }
+
+      const client = await storage.getClient(quotation.clientId!);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+
+      const doc = await PDFDocument.create();
+      const page = doc.addPage();
+      const { width, height } = page.getSize();
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+
+      page.drawText('CDN QUOTATION', { x: 50, y: height - 50, size: 20, font: boldFont });
+      page.drawText(`Reference: ${quotation.clientNumber}`, { x: 50, y: height - 80, size: 12, font });
+      page.drawText(`Date: ${format(new Date(quotation.calculationDate), 'yyyy-MM-dd')}`, { x: 50, y: height - 100, size: 12, font });
+
+      page.drawText('Client Information', { x: 50, y: height - 140, size: 14, font: boldFont });
+      page.drawText(`Name: ${quotation.clientName}`, { x: 50, y: height - 160, size: 12, font });
+      page.drawText(`Address: ${quotation.clientAddress}`, { x: 50, y: height - 180, size: 12, font });
+
+      page.drawText('Quotation Details', { x: 50, y: height - 220, size: 14, font: boldFont });
+      page.drawText(`Investment Amount: R ${quotation.investmentAmount.toLocaleString()}`, { x: 50, y: height - 240, size: 12, font });
+      page.drawText(`Interest Rate: ${quotation.interestRate}`, { x: 50, y: height - 260, size: 12, font });
+      page.drawText(`Term: ${quotation.term} Years`, { x: 50, y: height - 280, size: 12, font });
+      page.drawText(`Maturity Value: R ${quotation.maturityValue.toLocaleString()}`, { x: 50, y: height - 300, size: 12, font });
+
+      const pdfBytes = await doc.save();
+      const fileName = `Quotation_${quotation.clientNumber || id}.pdf`;
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, pdfBytes);
+
+      // Save as document record
+      await storage.createDocument({
+        name: fileName,
+        originalName: fileName,
+        size: pdfBytes.length,
+        type: 'application/pdf',
+        clientId: quotation.clientId,
+        userId: req.user.id,
+      });
+
+      res.contentType("application/pdf");
+      res.send(Buffer.from(pdfBytes));
+    } catch (error) {
+      console.error("PDF Generation error:", error);
+      res.status(500).json({ message: "Failed to generate quotation PDF" });
+    }
+  });
+
   // Keep team-members endpoint for backward compatibility
   app.get("/api/team-members", requireAuth, async (req, res) => {
     try {
