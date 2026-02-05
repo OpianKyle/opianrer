@@ -300,7 +300,7 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   offeredTo: text("offered_to"),
   investmentAmount: integer("investment_amount").notNull(),
   term: integer("term").notNull().default(1), // Years
-  interestRate: integer("interest_rate").notNull(), // percentage
+  interestRate: text("interest_rate").notNull(), // percentage stored as text for flexibility
   yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975), // 9.75%
   maturityValue: integer("maturity_value").notNull(),
   calculationDate: timestamp("calculation_date").notNull().defaultNow(),
@@ -321,7 +321,7 @@ export const insertCdnQuotationSchema = createInsertSchema(cdnQuotations).omit({
   userId: true,
 }).extend({
   investmentAmount: z.coerce.number().min(1, "Investment amount is required"),
-  interestRate: z.coerce.number().min(0).max(100, "Interest rate must be between 0 and 100"),
+  interestRate: z.string().min(1, "Interest rate is required"),
   yearlyDivAllocation: z.coerce.number().optional().default(9.75),
   maturityValue: z.coerce.number().optional(),
   calculationDate: z.coerce.date().optional(),

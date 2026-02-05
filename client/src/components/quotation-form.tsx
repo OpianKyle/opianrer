@@ -9,8 +9,15 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, addYears } from "date-fns";
+import { format, addYears, parseISO } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const INTEREST_RATES: Record<number, string[]> = {
+  1: ["9.75"],
+  3: ["11.75", "11.85", "11.95"],
+  5: ["13.10", "13.20", "13.30", "13.40", "13.50"]
+};
 
 export function QuotationForm({ client }: { client: Client }) {
   const { toast } = useToast();
@@ -27,11 +34,11 @@ export function QuotationForm({ client }: { client: Client }) {
       clientPhone: client.cellPhone || "",
       investmentAmount: 75000,
       term: 1,
-      interestRate: 9.75,
+      interestRate: "9.75",
       yearlyDivAllocation: 9.75,
-      calculationDate: format(new Date(), "yyyy-MM-dd"),
-      commencementDate: format(new Date(), "yyyy-MM-dd"),
-      redemptionDate: format(addYears(new Date(), 1), "yyyy-MM-dd"),
+      calculationDate: new Date(),
+      commencementDate: new Date(),
+      redemptionDate: addYears(new Date(), 1),
       preparedByName: user ? `${user.firstName} ${user.lastName}` : "",
       preparedByCell: "",
       preparedByOffice: "0861 263 346",
@@ -41,10 +48,21 @@ export function QuotationForm({ client }: { client: Client }) {
 
   const investmentAmount = form.watch("investmentAmount");
   const interestRate = form.watch("interestRate");
+  const term = form.watch("term");
+  const commencementDate = form.watch("commencementDate");
+
+  useEffect(() => {
+    if (commencementDate && term) {
+      const start = commencementDate instanceof Date ? commencementDate : parseISO(commencementDate);
+      if (!isNaN(start.getTime())) {
+        form.setValue("redemptionDate", addYears(start, term));
+      }
+    }
+  }, [commencementDate, term, form]);
 
   useEffect(() => {
     const amount = Number(investmentAmount) || 0;
-    const rate = Number(interestRate) || 0;
+    const rate = parseFloat(interestRate) || 0;
     const maturity = amount + (amount * (rate / 100));
     form.setValue("maturityValue", maturity);
   }, [investmentAmount, interestRate, form]);
@@ -64,14 +82,13 @@ export function QuotationForm({ client }: { client: Client }) {
     <Card className="w-full max-w-4xl mx-auto shadow-none border-0">
       <CardHeader className="text-center border-b mb-6">
         <CardTitle className="text-xl font-bold uppercase tracking-tight">
-          Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note 1 Year Term
+          Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note {term} Year Term
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-              {/* Left Column */}
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -136,7 +153,6 @@ export function QuotationForm({ client }: { client: Client }) {
                 />
               </div>
 
-              {/* Right Column */}
               <div className="space-y-4">
                 <FormField
                   control={form.control}
@@ -145,7 +161,7 @@ export function QuotationForm({ client }: { client: Client }) {
                     <FormItem className="flex items-center gap-4 space-y-0">
                       <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Date of Calculation:</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none" />
+                        <Input type="date" {...field} value={field.value instanceof Date ? format(field.value, "yyyy-MM-dd") : field.value} onChange={(e) => field.onChange(new Date(e.target.value))} className="bg-yellow-200 border-0 h-8 rounded-none" />
                       </FormControl>
                     </FormItem>
                   )}
@@ -158,7 +174,7 @@ export function QuotationForm({ client }: { client: Client }) {
                     <FormItem className="flex items-center gap-4 space-y-0">
                       <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Commencement Date of Plan:</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
+                        <Input type="date" {...field} value={field.value instanceof Date ? format(field.value, "yyyy-MM-dd") : field.value} onChange={(e) => field.onChange(new Date(e.target.value))} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
                       </FormControl>
                     </FormItem>
                   )}
@@ -170,9 +186,47 @@ export function QuotationForm({ client }: { client: Client }) {
                   render={({ field }) => (
                     <FormItem className="flex items-center gap-4 space-y-0">
                       <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Term in Years:</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} className="bg-yellow-200 border-0 h-8 rounded-none" />
-                      </FormControl>
+                      <Select 
+                        onValueChange={(val) => {
+                          const newTerm = parseInt(val);
+                          field.onChange(newTerm);
+                          form.setValue("interestRate", INTEREST_RATES[newTerm][0]);
+                        }} 
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-yellow-200 border-0 h-8 rounded-none font-bold">
+                            <SelectValue placeholder="Select term" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">1 Year</SelectItem>
+                          <SelectItem value="3">3 Years</SelectItem>
+                          <SelectItem value="5">5 Years</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="interestRate"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Interest Rate:</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-yellow-200 border-0 h-8 rounded-none font-bold">
+                            <SelectValue placeholder="Select rate" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {INTEREST_RATES[term as keyof typeof INTEREST_RATES]?.map((rate) => (
+                            <SelectItem key={rate} value={rate}>{rate}%</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormItem>
                   )}
                 />
@@ -184,7 +238,7 @@ export function QuotationForm({ client }: { client: Client }) {
                     <FormItem className="flex items-center gap-4 space-y-0">
                       <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Redemption Date:</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} value={field.value as string} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
+                        <Input type="date" {...field} value={field.value instanceof Date ? format(field.value, "yyyy-MM-dd") : field.value} onChange={(e) => field.onChange(new Date(e.target.value))} className="bg-yellow-200 border-0 h-8 rounded-none font-bold" />
                       </FormControl>
                     </FormItem>
                   )}
