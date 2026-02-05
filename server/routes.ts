@@ -648,15 +648,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Return Forecast`, { x: margin + 300, y, size: 10, font: boldFont });
       y -= lineHeight * 1.5;
 
+      // Current row
       page.drawText(`Current`, { x: margin, y, size: 10, font });
       page.drawText(`R ${quotation.investmentAmount.toLocaleString()}`, { x: margin + 100, y, size: 10, font });
       page.drawText(`Projected: ${quotation.interestRate}`, { x: margin + 300, y, size: 10, font });
       y -= lineHeight * 1.5;
 
-      page.drawText(`${quotation.term}`, { x: margin, y, size: 10, font });
-      page.drawText(`R ${quotation.maturityValue.toLocaleString()}`, { x: margin + 100, y, size: 10, font });
-      page.drawText(`R ${(quotation.maturityValue - quotation.investmentAmount).toLocaleString()}`, { x: margin + 300, y, size: 10, font });
-      y -= lineHeight * 3;
+      // Projections for each year up to the term
+      const yearlyDiv = quotation.yearlyDivAllocation || 0;
+      const shares = (quotation.investmentAmount / 8);
+      let currentVal = quotation.investmentAmount;
+
+      for (let i = 1; i <= Math.min(5, quotation.term); i++) {
+        const yearDiv = shares * yearlyDiv;
+        currentVal += yearDiv;
+        
+        page.drawText(`${i}`, { x: margin, y, size: 10, font });
+        page.drawText(`R ${Math.round(currentVal).toLocaleString()}`, { x: margin + 100, y, size: 10, font });
+        page.drawText(`R ${Math.round(yearDiv).toLocaleString()}`, { x: margin + 300, y, size: 10, font });
+        y -= lineHeight * 1.5;
+      }
+      y -= lineHeight * 1.5;
 
       // MODELLED FUND CHOICES Section
       page.drawText(`MODELLED FUND CHOICES`, { x: margin, y, size: 11, font: boldFont });
