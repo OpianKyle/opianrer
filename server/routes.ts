@@ -900,6 +900,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/interest-rates/:id", requireAuth, async (req: any, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Only super admins can manage interest rates" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(interestRates).where(eq(interestRates.id, id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete interest rate" });
+    }
+  });
+
   app.get("/api/kanban/boards", requireAuth, async (req: any, res) => {
     try {
       // Admin and super admin can see all boards, regular users see only their own

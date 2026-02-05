@@ -57,6 +57,36 @@ export default function Settings() {
     }
   });
 
+  const [profileData, setProfileData] = useState({
+    username: user?.username || "",
+    email: user?.email || "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    company: "",
+    timezone: "UTC"
+  });
+
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    desktopNotifications: true,
+    darkMode: false,
+    language: "en",
+    dateFormat: "MM/DD/YYYY",
+    timeFormat: "12h"
+  });
+
+  const handleProfileSave = () => {
+    toast({
+      title: "Profile Updated",
+      description: "Your profile information has been saved successfully.",
+    });
+  };
+
+  const handlePreferenceChange = (key: string, value: boolean | string) => {
+    setPreferences(prev => ({ ...prev, [key]: value }));
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-4xl relative min-h-screen overflow-x-hidden">
       <div className="mb-8">
@@ -136,67 +166,6 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="profile" className="space-y-6">
-    username: user?.username || "",
-    email: user?.email || "",
-    firstName: "",
-    lastName: "",
-    phone: "",
-    company: "",
-    timezone: "UTC"
-  });
-
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    desktopNotifications: true,
-    darkMode: false,
-    language: "en",
-    dateFormat: "MM/DD/YYYY",
-    timeFormat: "12h"
-  });
-
-  const handleProfileSave = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
-  };
-
-  const handlePreferenceChange = (key: string, value: boolean | string) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
-  };
-
-  return (
-    <div className="container mx-auto p-6 max-w-4xl relative min-h-screen overflow-x-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-50/30 -z-10"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/20 to-blue-600/20 rounded-full blur-3xl animate-pulse -z-10 transform translate-x-1/2 -translate-y-1/2"></div>
-      
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="flex items-center space-x-2">
-            <User className="w-4 h-4" />
-            <span>Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center space-x-2">
-            <Bell className="w-4 h-4" />
-            <span>Notifications</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center space-x-2">
-            <Shield className="w-4 h-4" />
-            <span>Security</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="flex items-center space-x-2">
-            <Palette className="w-4 h-4" />
-            <span>Appearance</span>
-          </TabsTrigger>
-        </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
           <Card>
