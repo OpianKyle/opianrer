@@ -556,27 +556,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const doc = await PDFDocument.create();
-      const page = doc.addPage();
+      let page = doc.addPage();
       const { width, height } = page.getSize();
       const font = await doc.embedFont(StandardFonts.Helvetica);
       const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
 
-      page.drawText('CDN QUOTATION', { x: 50, y: height - 50, size: 20, font: boldFont });
-      page.drawText(`Reference: ${quotation.clientNumber}`, { x: 50, y: height - 80, size: 12, font });
-      page.drawText(`Date: ${format(new Date(quotation.calculationDate), 'yyyy-MM-dd')}`, { x: 50, y: height - 100, size: 12, font });
+      let y = height - 50;
+      const margin = 50;
+      const lineHeight = 15;
 
-      page.drawText('Client Information', { x: 50, y: height - 140, size: 14, font: boldFont });
-      page.drawText(`Name: ${quotation.clientName}`, { x: 50, y: height - 160, size: 12, font });
-      page.drawText(`Address: ${quotation.clientAddress}`, { x: 50, y: height - 180, size: 12, font });
+      // Title
+      page.drawText(`Quotation for FlexMax Capital Appreciator Fixed Deposit Note ${quotation.term} Year Term`, {
+        x: margin,
+        y,
+        size: 14,
+        font: boldFont,
+      });
+      y -= lineHeight * 3;
 
-      page.drawText('Quotation Details', { x: 50, y: height - 220, size: 14, font: boldFont });
-      page.drawText(`Investment Amount: R ${quotation.investmentAmount.toLocaleString()}`, { x: 50, y: height - 240, size: 12, font });
-      page.drawText(`Interest Rate: ${quotation.interestRate}`, { x: 50, y: height - 260, size: 12, font });
-      page.drawText(`Term: ${quotation.term} Years`, { x: 50, y: height - 280, size: 12, font });
-      page.drawText(`Maturity Value: R ${quotation.maturityValue.toLocaleString()}`, { x: 50, y: height - 300, size: 12, font });
+      // Header Info
+      page.drawText(`Date of Offer:`, { x: margin, y, size: 10, font });
+      page.drawText(`${format(new Date(quotation.calculationDate), 'yyyy/MM/dd')}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight * 2;
+
+      page.drawText(`Offered to:`, { x: margin, y, size: 10, font });
+      page.drawText(`${quotation.clientName}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Address:`, { x: margin, y, size: 10, font });
+      const addressLines = quotation.clientAddress.split('\n');
+      addressLines.forEach((line, i) => {
+        page.drawText(line, { x: margin + 150, y - (i * lineHeight), size: 10, font });
+      });
+      y -= lineHeight * (Math.max(1, addressLines.length) + 1);
+
+      page.drawText(`Telephone:`, { x: margin, y, size: 10, font });
+      page.drawText(`${quotation.clientPhone || ''}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Email:`, { x: margin, y, size: 10, font });
+      page.drawText(`${client.email || ''}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      page.drawText(`Dear ${quotation.clientName}`, { x: margin, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`We take pleasure in submitting the following proposal to you:`, { x: margin, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      // INVESTMENT SUMMARY Section
+      page.drawText(`INVESTMENT SUMMARY`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      const summaryItems = [
+        ['Investment amount', `R ${quotation.investmentAmount.toLocaleString()}`],
+        ['Amount allocated with enhancement', `R ${quotation.investmentAmount.toLocaleString()}`],
+        ['Term in years', `${quotation.term}`],
+        ['Commencement date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
+        ['Percentage returned first year', `${quotation.term === 1 ? '90%' : 'N/A'}`],
+        ['Income allocated to capital in first year', quotation.term === 1 ? `R ${(quotation.investmentAmount * 0.9).toLocaleString()}` : 'N/A'],
+        ['Liquidity', 'None'],
+        ['', ''],
+        ['Contract Start date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
+        ['Exit date', `${format(new Date(quotation.redemptionDate), 'dd-MMM-yy')}`],
+        ['Return Cycle', 'Annually'],
+        ['Capital allocation', '100%'],
+      ];
+
+      summaryItems.forEach(([label, value]) => {
+        if (label) {
+          page.drawText(label, { x: margin, y, size: 10, font });
+          page.drawText(value, { x: margin + 250, y, size: 10, font });
+        }
+        y -= lineHeight;
+      });
+
+      y -= lineHeight * 2;
+      
+      // Footer text for first page
+      const footerY = 50;
+      page.drawText(`Registered Address: 220 Ashwood Avenue, Waterkloof Glen, 0181, Pretoria         Fund Advice: Sovereign Trust International Limited`, { x: margin, y: footerY + 15, size: 7, font });
+      page.drawText(`Email: info@opiansapital.com Website: www.opiansapital.com              Sovereign Place, 117 Main Street, GX11 1AA, Gibraltar, GI`, { x: margin, y: footerY, size: 7, font });
+
+      // NEW PAGE: INCOME PROJECTIONS
+      page = doc.addPage();
+      y = height - 50;
+
+      page.drawText(`INCOME PROJECTIONS`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 2;
+
+      page.drawText(`Year`, { x: margin, y, size: 10, font: boldFont });
+      page.drawText(`Capital Value`, { x: margin + 100, y, size: 10, font: boldFont });
+      page.drawText(`Return Forecast`, { x: margin + 300, y, size: 10, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      page.drawText(`Current`, { x: margin, y, size: 10, font });
+      page.drawText(`R ${quotation.investmentAmount.toLocaleString()}`, { x: margin + 100, y, size: 10, font });
+      page.drawText(`Projected: ${quotation.interestRate}`, { x: margin + 300, y, size: 10, font });
+      y -= lineHeight * 1.5;
+
+      page.drawText(`${quotation.term}`, { x: margin, y, size: 10, font });
+      page.drawText(`R ${quotation.maturityValue.toLocaleString()}`, { x: margin + 100, y, size: 10, font });
+      page.drawText(`R ${(quotation.maturityValue - quotation.investmentAmount).toLocaleString()}`, { x: margin + 300, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      // MODELLED FUND CHOICES Section
+      page.drawText(`MODELLED FUND CHOICES`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      page.drawText(`ISIN`, { x: margin, y, size: 10, font: boldFont });
+      page.drawText(`Fund Name`, { x: margin + 150, y, size: 10, font: boldFont });
+      page.drawText(`Type`, { x: margin + 350, y, size: 10, font: boldFont });
+      page.drawText(`Split`, { x: margin + 450, y, size: 10, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      page.drawText(`SIN Code: DG00U67BC567`, { x: margin, y, size: 9, font });
+      page.drawText(`WSF Global Equity Fund`, { x: margin + 150, y, size: 9, font });
+      page.drawText(`Risk Adverse`, { x: margin + 350, y, size: 9, font });
+      page.drawText(`100%`, { x: margin + 450, y, size: 9, font });
+      y -= lineHeight * 3;
+
+      // CONDITIONS Section
+      page.drawText(`CONDITIONS`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      const conditions = [
+        "1. To effectively evaluate this product against comparable alternatives, it is essential to analyze and contrast its risk reward profile with those of similar products offering analogous risk reward structures.",
+        "2. This offer involves the purchase of Fixed Deposit Notes (FDN's) in private equity. Given the inherent risks associated we strongly recommend independent advice before making any commitment.",
+        "3. This offer contains no guarantees beyond those expressly stated herein. Upon signing, the terms outlined in this offer shall constitute a legally binding agreement between the client and the company.",
+        "4. The applicant acknowledges understanding of the complexities involving this investment as well as the lock-in periods contained in the investment.",
+        "5. The applicant understands that a loan agreement will come into existence after signature of this quotation and that returns paid are mirrored on the performance of the selected fund above.",
+        "6. The applicant understands the zero liquidity nature of this investment and has ensured that he has enough liquid investments or savings to ensure liquidity during this investment.",
+        "7. The applicant understands that the directors or trustees of company funds, in their collective capacity, may limit, withhold, defer or reduce payments or payouts as necessary at moment's notice to safeguard the company's liquidity requirements and ensure financial stability.",
+        "8. The individual, individuals or organisation's entering into this agreement acknowledges and understands that this is a fixed-term contract, as specified in the duration outlined above, the term \"Exit Date\" refers to the agreed-upon end date of the agreement.",
+        "9. The applicant understands that if shares are issued under this agreement, the shares are issued for security only and are returnable when the applicant is paid back his invested capital.",
+        "10. The applicant retains the option to convert their capital to fixed shares at exit date; whereafter the par value of the converted shares will be based on a comprehensive company's valuation at the time of exit."
+      ];
+
+      conditions.forEach(condition => {
+        const words = condition.split(' ');
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (font.widthOfTextAtSize(testLine, 9) > width - (margin * 2)) {
+            page.drawText(currentLine, { x: margin, y, size: 9, font });
+            y -= 11;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        page.drawText(currentLine, { x: margin, y, size: 9, font });
+        y -= 15;
+      });
+
+      y -= lineHeight;
+
+      // VALIDITY Section
+      page.drawText(`VALIDITY`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+      const validityText = "This offer remains valid for a period of 14 days from the date of issuance, it is imperative that the receipt of funds occur within this specific time frame. All required documentation must be completed, and funds transfers finalized on or before expiration of the offers validity period. Should any information remain outstanding or incomplete, funds will be processed, a new offer must be issued and duly executed before the terms can be formally accepted by the company.";
+      
+      const words = validityText.split(' ');
+      let currentLine = '';
+      words.forEach(word => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (font.widthOfTextAtSize(testLine, 9) > width - (margin * 2)) {
+          page.drawText(currentLine, { x: margin, y, size: 9, font });
+          y -= 11;
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+      page.drawText(currentLine, { x: margin, y, size: 9, font });
+      y -= lineHeight * 3;
+
+      // PLACEMENT AND ADMIN FEES
+      page.drawText(`PLACEMENT AND ADMIN FEES`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+      page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
+      page.drawText(`Frequency`, { x: margin + 200, y, size: 10, font: boldFont });
+      page.drawText(`Percentage`, { x: margin + 350, y, size: 10, font: boldFont });
+      y -= lineHeight * 1.2;
+      page.drawText(`Placement fee`, { x: margin, y, size: 10, font });
+      page.drawText(`Once Off`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`1.00%`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Admin Fees`, { x: margin, y, size: 10, font });
+      page.drawText(`Once Off`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`0.50%`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      // COMMISSION
+      page.drawText(`COMMISSION`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+      page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
+      page.drawText(`Frequency`, { x: margin + 200, y, size: 10, font: boldFont });
+      page.drawText(`Percentage`, { x: margin + 350, y, size: 10, font: boldFont });
+      y -= lineHeight * 1.2;
+      page.drawText(`Commission`, { x: margin, y, size: 10, font });
+      page.drawText(`First Year`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`0.50%`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      // AGREEMENT DETAILS
+      page.drawText(`AGREEMENT DETAILS`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+      page.drawText(`Agreement number:`, { x: margin, y, size: 10, font });
+      page.drawText(`36456453654`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Investor Name:`, { x: margin, y, size: 10, font });
+      page.drawText(`${quotation.clientName}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight * 4;
+
+      page.drawText(`Signature of investor: _________________________________`, { x: margin, y, size: 10, font });
+      y -= lineHeight * 3;
+
+      // SUPPORT DOCUMENTATION
+      page.drawText(`SUPPORT DOCUMENTATION`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+      const docs = ["Application form", "Copy of Identity Document / Passport", "Proof of Address", "Bank Statement"];
+      docs.forEach(docName => {
+        page.drawText(`[ ] ${docName}`, { x: margin, y, size: 10, font });
+        y -= lineHeight;
+      });
 
       const pdfBytes = await doc.save();
-      const fileName = `Quotation_${quotation.clientNumber || id}.pdf`;
+      const fileName = `Quotation_${quotation.clientName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
       const filePath = path.join(uploadsDir, fileName);
       fs.writeFileSync(filePath, pdfBytes);
 
