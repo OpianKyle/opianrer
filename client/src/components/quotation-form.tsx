@@ -77,10 +77,15 @@ export function QuotationForm({ client }: { client: Client }) {
   // Update interest rate options when term changes
   useEffect(() => {
     const available = dynamicRates[term as keyof typeof dynamicRates];
-    if (available && !available.includes(interestRate)) {
-      form.setValue("interestRate", available[0]);
+    if (available && available.length > 0) {
+      if (term === 1) {
+        form.setValue("interestRate", available[0]);
+      } else {
+        // For 3 and 5 years, use the last rate as per requirement
+        form.setValue("interestRate", available[available.length - 1]);
+      }
     }
-  }, [term, dynamicRates, interestRate, form]);
+  }, [term, dynamicRates, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: InsertCdnQuotation) => {
@@ -230,18 +235,13 @@ export function QuotationForm({ client }: { client: Client }) {
                   render={({ field }) => (
                     <FormItem className="flex items-center gap-4 space-y-0">
                       <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Interest Rate:</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-yellow-200 border-0 h-8 rounded-none font-bold">
-                            <SelectValue placeholder="Select rate" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {dynamicRates[term as keyof typeof dynamicRates]?.map((rate) => (
-                            <SelectItem key={rate} value={rate}>{rate}%</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          readOnly 
+                          className="bg-yellow-100 border-0 h-8 rounded-none font-bold focus-visible:ring-0 cursor-not-allowed" 
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
