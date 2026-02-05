@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { InterestRate, InsertInterestRate, insertInterestRateSchema } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,13 +11,132 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Settings as SettingsIcon, User, Bell, Shield, Palette } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, Plus, Trash2, Loader2 } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import NotificationSettings from "@/components/notification-settings";
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+
+  const { data: rates, isLoading: ratesLoading } = useQuery<InterestRate[]>({ 
+    queryKey: ["/api/interest-rates"] 
+  });
+
+  const rateForm = useForm<InsertInterestRate>({
+    resolver: zodResolver(insertInterestRateSchema),
+    defaultValues: {
+      term: 1,
+      rate: "",
+      isDefault: false
+    }
+  });
+
+  const createRateMutation = useMutation({
+    mutationFn: async (data: InsertInterestRate) => {
+      const res = await apiRequest("POST", "/api/interest-rates", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interest-rates"] });
+      rateForm.reset();
+      toast({ title: "Rate added successfully" });
+    }
+  });
+
+  const deleteRateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/interest-rates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interest-rates"] });
+      toast({ title: "Rate deleted" });
+    }
+  });
+
+  return (
+    <div className="container mx-auto p-6 max-w-4xl relative min-h-screen overflow-x-hidden">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">Settings</h1>
+        <p className="text-gray-600">Manage your account settings and interest rates</p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="rates">Rates</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rates" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Interest Rates</CardTitle>
+              <CardDescription>Configure standard interest rates for different terms</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {user?.role === 'super_admin' ? (
+                <Form {...rateForm}>
+                  <form onSubmit={rateForm.handleSubmit((data) => createRateMutation.mutate(data))} className="grid grid-cols-3 gap-4 items-end">
+                    <FormField
+                      control={rateForm.control}
+                      name="term"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Term (Years)</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={rateForm.control}
+                      name="rate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rate (%)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="9.75" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" disabled={createRateMutation.isPending}>
+                      <Plus className="h-4 w-4 mr-2" /> Add
+                    </Button>
+                  </form>
+                </Form>
+              ) : (
+                <p className="text-sm text-muted-foreground">Only super admins can manage interest rates.</p>
+              )}
+
+              <div className="border rounded-md divide-y">
+                {ratesLoading ? (
+                  <div className="p-4 flex justify-center"><Loader2 className="animate-spin h-4 w-4" /></div>
+                ) : rates?.map((rate) => (
+                  <div key={rate.id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold">{rate.term} Year</span>
+                      <span className="ml-4 text-primary font-mono">{rate.rate}%</span>
+                    </div>
+                    {user?.role === 'super_admin' && (
+                      <Button variant="ghost" size="icon" onClick={() => deleteRateMutation.mutate(rate.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        {/* ... remaining tabs content unchanged ... */}
 
   const [profileData, setProfileData] = useState({
     username: user?.username || "",

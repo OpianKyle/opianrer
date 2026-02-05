@@ -300,8 +300,8 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   offeredTo: text("offered_to"),
   investmentAmount: integer("investment_amount").notNull(),
   term: integer("term").notNull().default(1), // Years
-  interestRate: text("interest_rate").notNull(), // percentage stored as text for flexibility
-  yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975), // 9.75%
+  interestRate: text("interest_rate").notNull(),
+  yearlyDivAllocation: integer("yearly_div_allocation").notNull().default(975),
   maturityValue: integer("maturity_value").notNull(),
   calculationDate: timestamp("calculation_date").notNull().defaultNow(),
   commencementDate: timestamp("commencement_date").notNull().defaultNow(),
@@ -310,10 +310,25 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   preparedByCell: text("prepared_by_cell"),
   preparedByOffice: text("prepared_by_office"),
   preparedByEmail: text("prepared_by_email"),
-  status: text("status").notNull().default("draft"), // draft, sent, accepted
+  status: text("status").notNull().default("draft"),
   createdAt: timestamp("created_at").defaultNow(),
   userId: integer("user_id").references(() => users.id),
 });
+
+export const interestRates = pgTable("interest_rates", {
+  id: serial("id").primaryKey(),
+  term: integer("term").notNull(),
+  rate: text("rate").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertInterestRateSchema = createInsertSchema(interestRates).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InterestRate = typeof interestRates.$inferSelect;
+export type InsertInterestRate = z.infer<typeof insertInterestRateSchema>;
 
 export const insertCdnQuotationSchema = createInsertSchema(cdnQuotations).omit({
   id: true,

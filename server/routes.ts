@@ -857,7 +857,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Kanban Boards
+  // Interest Rate management
+  app.get("/api/interest-rates", requireAuth, async (req, res) => {
+    try {
+      const rates = await db.select().from(interestRates);
+      res.json(rates);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch interest rates" });
+    }
+  });
+
+  app.post("/api/interest-rates", requireAuth, async (req: any, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Only super admins can manage interest rates" });
+    }
+    try {
+      const result = insertInterestRateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid rate data", errors: result.error.issues });
+      }
+      const [rate] = await db.insert(interestRates).values(result.data).returning();
+      res.status(201).json(rate);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create interest rate" });
+    }
+  });
+
+  app.put("/api/interest-rates/:id", requireAuth, async (req: any, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Only super admins can manage interest rates" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      const result = insertInterestRateSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid rate data", errors: result.error.issues });
+      }
+      const [rate] = await db.update(interestRates).set({ ...result.data, updatedAt: new Date() }).where(eq(interestRates.id, id)).returning();
+      res.json(rate);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update interest rate" });
+    }
+  });
+
+  app.delete("/api/interest-rates/:id", requireAuth, async (req: any, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Only super admins can manage interest rates" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(interestRates).where(eq(interestRates.id, id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete interest rate" });
+    }
+  });
   app.get("/api/kanban/boards", requireAuth, async (req: any, res) => {
     try {
       // Admin and super admin can see all boards, regular users see only their own

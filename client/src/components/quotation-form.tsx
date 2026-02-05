@@ -23,6 +23,13 @@ export function QuotationForm({ client }: { client: Client }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: user } = useQuery<User>({ queryKey: ["/api/user"] });
+  const { data: globalRates } = useQuery<InterestRate[]>({ queryKey: ["/api/interest-rates"] });
+
+  const dynamicRates = globalRates?.reduce((acc, curr) => {
+    if (!acc[curr.term]) acc[curr.term] = [];
+    acc[curr.term].push(curr.rate);
+    return acc;
+  }, {} as Record<number, string[]>) || INTEREST_RATES;
 
   const form = useForm<InsertCdnQuotation>({
     resolver: zodResolver(insertCdnQuotationSchema),
@@ -66,6 +73,14 @@ export function QuotationForm({ client }: { client: Client }) {
     const maturity = amount + (amount * (rate / 100));
     form.setValue("maturityValue", maturity);
   }, [investmentAmount, interestRate, form]);
+
+  // Update interest rate options when term changes
+  useEffect(() => {
+    const available = dynamicRates[term as keyof typeof dynamicRates];
+    if (available && !available.includes(interestRate)) {
+      form.setValue("interestRate", available[0]);
+    }
+  }, [term, dynamicRates, interestRate, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: InsertCdnQuotation) => {
@@ -222,7 +237,7 @@ export function QuotationForm({ client }: { client: Client }) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {INTEREST_RATES[term as keyof typeof INTEREST_RATES]?.map((rate) => (
+                          {dynamicRates[term as keyof typeof dynamicRates]?.map((rate) => (
                             <SelectItem key={rate} value={rate}>{rate}%</SelectItem>
                           ))}
                         </SelectContent>
