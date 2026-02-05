@@ -585,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Address:`, { x: margin, y, size: 10, font });
       const addressLines = quotation.clientAddress.split('\n');
       addressLines.forEach((line, i) => {
-        page.drawText(line, { x: margin + 150, y - (i * lineHeight), size: 10, font });
+        page.drawText(line, { x: margin + 150, y: y - (i * lineHeight), size: 10, font });
       });
       y -= lineHeight * (Math.max(1, addressLines.length) + 1);
 
