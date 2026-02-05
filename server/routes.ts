@@ -1017,9 +1017,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const year1Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
       const year2Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
       const year3Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+      const year4Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+      const year5Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+
       const year1Value = quotation.investmentAmount + year1Return;
       const year2Value = year1Value + year2Return;
       const year3Value = year2Value + year3Return;
+      const year4Value = year3Value + year4Return;
+      const year5Value = year4Value + year5Return;
+
       const term = Number(quotation.term) || 1;
       const annualizedReturn = Math.pow(targetValue / quotation.investmentAmount, 1 / term) - 1;
 
@@ -1226,6 +1232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ["Year 1", `R${year1Return.toLocaleString()}`, `R${year1Value.toLocaleString()}`],
         ["Year 2", `R${year2Return.toLocaleString()}`, `R${year2Value.toLocaleString()}`],
         ["Year 3", `R${year3Return.toLocaleString()}`, `R${year3Value.toLocaleString()}`],
+        ["Year 4", `R${year4Return.toLocaleString()}`, `R${year4Value.toLocaleString()}`],
+        ["Year 5", `R${year5Return.toLocaleString()}`, `R${year5Value.toLocaleString()}`],
       ];
 
       page2.drawText("Year", { x: leftMargin, y: yPos, size: 10, font: boldFont });
@@ -1274,7 +1282,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ["Year 0", "-", "-", "-", "-", `R${quotation.investmentAmount.toLocaleString()}, 00`],
         ["Year 1", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year1Return).toLocaleString()}`, `${((year1Return / quotation.investmentAmount) * 100).toFixed(2)}%`, `R${Math.round(year1Value).toLocaleString()}`],
         ["Year 2", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year2Return).toLocaleString()}`, `${((year2Return / year1Value) * 100).toFixed(2)}%`, `R${Math.round(year2Value).toLocaleString()}`],
-        ["Year 3", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year3Return).toLocaleString()}`, `${((year3Return / year2Value) * 100).toFixed(2)}%`, `R${Math.round(year3Value).toLocaleString()}`]
+        ["Year 3", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year3Return).toLocaleString()}`, `${((year3Return / year2Value) * 100).toFixed(2)}%`, `R${Math.round(year3Value).toLocaleString()}`],
+        ["Year 4", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year4Return).toLocaleString()}`, `${((year4Return / year3Value) * 100).toFixed(2)}%`, `R${Math.round(year4Value).toLocaleString()}`],
+        ["Year 5", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year5Return).toLocaleString()}`, `${((year5Return / year4Value) * 100).toFixed(2)}%`, `R${Math.round(year5Value).toLocaleString()}`]
       ];
 
       const colWidths = [60, 85, 85, 85, 70, 100];
