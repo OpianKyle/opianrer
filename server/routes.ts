@@ -911,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Load logo image
       let logoImage: any = null;
       try {
-        const logoPath = path.join(__dirname, "../attached_assets/image_1756901569236_1770200770187.png");
+        const logoPath = path.join(__dirname, "../attached_assets/image_1756974781134.png");
         const logoBytes = await fs.promises.readFile(logoPath);
         logoImage = await pdfDoc.embedPng(logoBytes);
       } catch (error) {
@@ -1009,8 +1009,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
+      // === Calculations ===
+      const targetValue = quotation.investmentAmount * (1 + (Number(quotation.interestRate) || 0) / 100);
+      const totalProfit = targetValue - quotation.investmentAmount;
+      const sharesIssued = quotation.investmentAmount / 8;
+      // Using maturityValue and other fields from quotation if available, otherwise defaulting to 0
+      const year1Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+      const year2Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+      const year3Return = sharesIssued * (quotation.yearlyDivAllocation || 0);
+      const year1Value = quotation.investmentAmount + year1Return;
+      const year2Value = year1Value + year2Return;
+      const year3Value = year2Value + year3Return;
+      const term = Number(quotation.term) || 1;
+      const annualizedReturn = Math.pow(targetValue / quotation.investmentAmount, 1 / term) - 1;
+
       // === COVER PAGE ===
       const coverPage = pdfDoc.addPage([595.28, 841.89]);
+      
       
       // Add logo on the left side - larger for cover
       if (logoImage) {
@@ -1043,8 +1058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       addLogo(page1);
       let yPos = 680;
 
-      // Title
-      const pageTitle = `Turning R${quotation.investmentAmount.toLocaleString()} into R${quotation.maturityValue.toLocaleString()} in ${quotation.term} Years`;
+      // Title with dynamic values
+      const pageTitle = `Turning R${quotation.investmentAmount.toLocaleString()} into R${targetValue.toLocaleString()} (${quotation.interestRate}% Growth) in ${quotation.term} Years`;
       page1.drawText(pageTitle, { 
         x: leftMargin, 
         y: yPos, 
@@ -1091,24 +1106,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page1.drawText("Executive Summary", { x: leftMargin, y: yPos, size: 12, font: boldFont });
       yPos -= 25;
 
-      const executiveSummary = `This proposal outlines a strategic private equity (PE) investment strategy designed to grow an initial capital of R${quotation.investmentAmount.toLocaleString()} over a ${quotation.term}-year horizon. By leveraging high-growth private equity opportunities in carefully selected industries, we aim to maximize returns while mitigating risks through diversification and expert fund management.`;
+      const executiveSummary = `This proposal outlines a strategic private equity (PE) investment strategy designed to grow an initial capital of R${quotation.investmentAmount.toLocaleString()} by ${quotation.interestRate}% (R${targetValue.toLocaleString()} total) over a ${quotation.term}-year horizon. By leveraging high-growth private equity opportunities in carefully selected industries, we aim to maximize returns while mitigating risks through diversification and expert fund management.`;
       yPos = drawJustifiedText(page1, executiveSummary, leftMargin, yPos, contentWidth, font, 11);
 
       yPos -= 35;
-
-      // target value logic
-      const amount = Number(quotation.investmentAmount) || 0;
-      const term = Number(quotation.term) || 1;
-      let maturityValue = Number(quotation.maturityValue) || 0;
 
       // Investment Summary Section
       page1.drawText("Investment Summary", { x: leftMargin, y: yPos, size: 12, font: boldFont });
       yPos -= 25;
 
       const summaryData = [
-        ["Initial Investment Amount:", `R${amount.toLocaleString()}`],
-        ["Term:", `${term} Years`],
-        ["Target Maturity Value:", `R${maturityValue.toLocaleString()}`]
+        ["Target Investment Value:", `R${targetValue.toLocaleString()}`],
+        ["Total Profit:", `R${totalProfit.toLocaleString()}`],
+        ["Target Return:", `${quotation.interestRate}%`],
+        ["Annualized Return:", `${(annualizedReturn * 100).toFixed(1)}%`]
       ];
 
       summaryData.forEach(([label, value]) => {
@@ -1117,47 +1128,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
         yPos -= 20;
       });
 
+      yPos -= 15;
+
+      // === PAGE 1B: KEY HIGHLIGHTS (to avoid footer overlap) ===
+      const page1b = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page1b);
+      addLogo(page1b);
+      yPos = 720;
+
+      // Key Highlights
+      page1b.drawText("Key Highlights:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
       yPos -= 20;
 
-      // Yearly breakdown table
-      if (term === 3 || term === 5) {
-        page1.drawText("Yearly Interest Breakdown:", { x: leftMargin, y: yPos, size: 12, font: boldFont });
-        yPos -= 25;
+      const highlights = [
+        `• Target Return: ${quotation.interestRate}% growth (R${(targetValue - quotation.investmentAmount).toLocaleString()} profit) in ${quotation.term} years (~${(annualizedReturn * 100).toFixed(0)}% annualized return).`,
+        "• Investment Strategy: Focus on growth equity in high-potential sectors.",
+        "• Risk Management: Portfolio diversification, and active management.",
+        `• Exit Strategy: Share buybacks, IPOs, or secondary buyouts after ${quotation.term} years.`
+      ];
 
-        const tableX = leftMargin;
-        const colWidth = 100;
-        
-        // Header
-        page1.drawText("Year", { x: tableX, y: yPos, size: 10, font: boldFont });
-        page1.drawText("Interest Rate", { x: tableX + colWidth, y: yPos, size: 10, font: boldFont });
-        yPos -= 15;
-        page1.drawLine({
-          start: { x: tableX, y: yPos + 5 },
-          end: { x: tableX + 200, y: yPos + 5 },
-          thickness: 1,
-        });
+      highlights.forEach(highlight => {
+        yPos = drawJustifiedText(page1b, highlight, leftMargin, yPos, contentWidth, font, 11);
+        yPos -= 10;
+      });
 
-        const rates = term === 3 ? ["11.75%", "11.85%", "11.95%"] : ["13.10%", "13.20%", "13.30%", "13.40%", "13.50%"];
-        
-        rates.forEach((rate, index) => {
-          page1.drawText(`Year ${index + 1}`, { x: tableX, y: yPos, size: 10, font });
-          page1.drawText(rate, { x: tableX + colWidth, y: yPos, size: 10, font });
-          yPos -= 15;
-        });
-      } else {
-        page1.drawText(`Interest Rate: ${quotation.interestRate}%`, { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      // === PAGE 2: INVESTMENT OPPORTUNITY ===
+      const page2 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page2);
+      addLogo(page2);
+      yPos = 750;
+
+      // Investment Opportunity & Market Outlook
+      page2.drawText("Investment Opportunity & Market Outlook", { 
+        x: leftMargin, 
+        y: yPos, 
+        size: 12, 
+        font: boldFont 
+      });
+      yPos -= 25;
+
+      const marketText = "Private equity has historically outperformed public markets, delivering 12-25%+ annual returns in emerging markets like South Africa and BRICS. Key sectors with strong growth potential include:";
+      yPos = drawJustifiedText(page2, marketText, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 20;
+
+      const sectors = [
+        "Technology & FinTech (Digital payments, SaaS, AI Related business)",
+        "Consumer Goods & Retail (E-commerce, premium brands, Rewards, Lifestyle products)",
+        "Healthcare & Pharma (Telemedicine, generics manufacturing)",
+        "Renewable Energy (Solar, battery storage)"
+      ];
+
+      sectors.forEach(sector => {
+        page2.drawText(sector, { x: leftMargin, y: yPos, size: 11, font });
+        yPos -= 17;
+      });
+
+      yPos -= 20;
+
+      const investText = "By investing in early stage but undervalued businesses with strong cash flow, IP and scalability, we position the portfolio for accelerated growth.";
+      yPos = drawJustifiedText(page2, investText, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 40;
+
+      // Proposed Investment Structure
+      page2.drawText("Proposed Investment Structure", { 
+        x: leftMargin, 
+        y: yPos, 
+        size: 12, 
+        font: boldFont 
+      });
+      yPos -= 30;
+
+      // Investment Structure Table
+      const tableData = [
+        ["Component", "Details"],
+        ["Investment Amount", `R${quotation.investmentAmount.toLocaleString()}, 00`],
+        ["Target Growth", `${quotation.interestRate}%`],
+        ["Term", `${quotation.term} Years`],
+        ["Target Value", `R${targetValue.toLocaleString()}, 00`],
+        ["Shares Issued", sharesIssued.toLocaleString()],
+      ];
+
+      tableData.forEach(([label, value]) => {
+        page2.drawText(label, { x: leftMargin, y: yPos, size: 11, font: boldFont });
+        page2.drawText(value, { x: leftMargin + 200, y: yPos, size: 11, font });
         yPos -= 20;
-      }
+      });
 
+      yPos -= 30;
+
+      // Dividend Schedule
+      page2.drawText("Projected Dividend Schedule", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 25;
+
+      const dividendData = [
+        ["Year 1", `R${year1Return.toLocaleString()}`, `R${year1Value.toLocaleString()}`],
+        ["Year 2", `R${year2Return.toLocaleString()}`, `R${year2Value.toLocaleString()}`],
+        ["Year 3", `R${year3Return.toLocaleString()}`, `R${year3Value.toLocaleString()}`],
+      ];
+
+      page2.drawText("Year", { x: leftMargin, y: yPos, size: 10, font: boldFont });
+      page2.drawText("Dividend", { x: leftMargin + 100, y: yPos, size: 10, font: boldFont });
+      page2.drawText("Total Value", { x: leftMargin + 250, y: yPos, size: 10, font: boldFont });
       yPos -= 20;
+
+      dividendData.forEach(([year, div, val]) => {
+        page2.drawText(year, { x: leftMargin, y: yPos, size: 10, font });
+        page2.drawText(div, { x: leftMargin + 100, y: yPos, size: 10, font });
+        page2.drawText(val, { x: leftMargin + 250, y: yPos, size: 10, font });
+        yPos -= 15;
+      });
+
+      // === PAGE 3: CONCLUSION ===
+      const page3 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page3);
+      addLogo(page3);
+      yPos = 750;
+
+      page3.drawText("Conclusion & Next Steps", { x: leftMargin, y: yPos, size: 14, font: boldFont });
+      yPos -= 30;
+
+      const conclusionText = "This proposal represents a unique opportunity to participate in high-growth private equity investments. We look forward to discussing this strategy further and tailoring it to your specific financial goals.";
+      yPos = drawJustifiedText(page3, conclusionText, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 40;
+      page3.drawText("Sincerely,", { x: leftMargin, y: yPos, size: 11, font });
+      yPos -= 25;
+      page3.drawText("The Opian Capital Team", { x: leftMargin, y: yPos, size: 11, font: boldFont });
 
       const pdfBytes = await pdfDoc.save();
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=Quotation_${id}.pdf`);
+      const fileName = `Proposal_${quotation.clientName.replace(/\s+/g, "_")}_${Date.now()}.pdf`;
+      const filePath = path.join(uploadsDir, fileName);
+      await fs.promises.writeFile(filePath, pdfBytes);
+
+      // Save as document record
+      await storage.createDocument({
+        name: fileName,
+        originalName: fileName,
+        size: pdfBytes.length,
+        type: "application/pdf",
+        clientId: quotation.clientId,
+        userId: req.user.id,
+      });
+
+      res.contentType("application/pdf");
       res.send(Buffer.from(pdfBytes));
     } catch (error) {
-      console.error("PDF generation error:", error);
-      res.status(500).json({ error: "Failed to generate PDF" });
+      console.error("PDF Generation error:", error);
+      res.status(500).json({ message: "Failed to generate proposal PDF" });
     }
   });
 
