@@ -587,6 +587,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         calculationDate: result.data.calculationDate ? new Date(result.data.calculationDate) : undefined,
         commencementDate: result.data.commencementDate ? new Date(result.data.commencementDate) : undefined,
         redemptionDate: result.data.redemptionDate ? new Date(result.data.redemptionDate) : undefined,
+        interestRate: result.data.interestRate.toString(), // Ensure it's a string
+        maturityValue: Math.round(Number(result.data.maturityValue) || 0), // Ensure it's an integer for the DB
+        investmentAmount: Math.round(Number(result.data.investmentAmount) || 0),
+        yearlyDivAllocation: Math.round(Number(result.data.yearlyDivAllocation) || 975),
       };
       const quotation = await storage.createCdnQuotation(quotationData as any);
       res.status(201).json(quotation);
@@ -831,14 +835,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       yPos -= 35;
 
+      // target value logic
+      const amount = Number(quotation.investmentAmount) || 0;
+      const term = Number(quotation.term) || 1;
+      let maturityValue = Number(quotation.maturityValue) || 0;
+
       // Investment Summary Section
       page1.drawText("Investment Summary", { x: leftMargin, y: yPos, size: 12, font: boldFont });
       yPos -= 25;
 
       const summaryData = [
-        ["Target Investment Value:", `R${quotation.maturityValue.toLocaleString()}`],
-        ["Interest Rate:", `${quotation.interestRate}%`],
-        ["Term:", `${quotation.term} Years`]
+        ["Initial Investment Amount:", `R${amount.toLocaleString()}`],
+        ["Term:", `${term} Years`],
+        ["Target Maturity Value:", `R${maturityValue.toLocaleString()}`]
       ];
 
       summaryData.forEach(([label, value]) => {
@@ -846,6 +855,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page1.drawText(value, { x: leftMargin + 200, y: yPos, size: 11, font });
         yPos -= 20;
       });
+
+      yPos -= 20;
+
+      // Yearly breakdown table
+      if (term === 3 || term === 5) {
+        page1.drawText("Yearly Interest Breakdown:", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+        yPos -= 25;
+
+        const tableX = leftMargin;
+        const colWidth = 100;
+        
+        // Header
+        page1.drawText("Year", { x: tableX, y: yPos, size: 10, font: boldFont });
+        page1.drawText("Interest Rate", { x: tableX + colWidth, y: yPos, size: 10, font: boldFont });
+        yPos -= 15;
+        page1.drawLine({
+          start: { x: tableX, y: yPos + 5 },
+          end: { x: tableX + 200, y: yPos + 5 },
+          thickness: 1,
+        });
+
+        const rates = term === 3 ? ["11.75%", "11.85%", "11.95%"] : ["13.10%", "13.20%", "13.30%", "13.40%", "13.50%"];
+        
+        rates.forEach((rate, index) => {
+          page1.drawText(`Year ${index + 1}`, { x: tableX, y: yPos, size: 10, font });
+          page1.drawText(rate, { x: tableX + colWidth, y: yPos, size: 10, font });
+          yPos -= 15;
+        });
+      } else {
+        page1.drawText(`Interest Rate: ${quotation.interestRate}%`, { x: leftMargin, y: yPos, size: 11, font: boldFont });
+        yPos -= 20;
+      }
+
+      yPos -= 20;
 
       const pdfBytes = await pdfDoc.save();
       res.setHeader('Content-Type', 'application/pdf');

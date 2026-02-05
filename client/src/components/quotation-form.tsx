@@ -69,10 +69,29 @@ export function QuotationForm({ client }: { client: Client }) {
 
   useEffect(() => {
     const amount = Number(investmentAmount) || 0;
-    const rate = parseFloat(interestRate) || 0;
-    const maturity = amount + (amount * (rate / 100));
-    form.setValue("maturityValue", maturity);
-  }, [investmentAmount, interestRate, form]);
+    const rate = term === 1 ? (parseFloat(interestRate) || 0) : 0;
+    
+    let maturity = 0;
+    if (term === 1) {
+      maturity = amount + (amount * (rate / 100));
+    } else if (term === 3) {
+      // 11.75%, 11.85%, 11.95%
+      const r1 = 0.1175;
+      const r2 = 0.1185;
+      const r3 = 0.1195;
+      maturity = amount * (1 + r1) * (1 + r2) * (1 + r3);
+    } else if (term === 5) {
+      // 13.10, 13.20, 13.30, 13.40, 13.50
+      const r1 = 0.1310;
+      const r2 = 0.1320;
+      const r3 = 0.1330;
+      const r4 = 0.1340;
+      const r5 = 0.1350;
+      maturity = amount * (1 + r1) * (1 + r2) * (1 + r3) * (1 + r4) * (1 + r5);
+    }
+    
+    form.setValue("maturityValue", Math.round(maturity));
+  }, [investmentAmount, interestRate, term, form]);
 
   // Update interest rate options when term changes
   useEffect(() => {
@@ -80,9 +99,12 @@ export function QuotationForm({ client }: { client: Client }) {
     if (available && available.length > 0) {
       if (term === 1) {
         form.setValue("interestRate", available[0]);
-      } else {
-        // For 3 and 5 years, use the last rate as per requirement
-        form.setValue("interestRate", available[available.length - 1]);
+      } else if (term === 3) {
+        // First 11.75, Second 11.85, Third 11.95
+        form.setValue("interestRate", "11.75%, 11.85%, 11.95%");
+      } else if (term === 5) {
+        // 13.10, 13.20, 13.30, 13.40, 13.50
+        form.setValue("interestRate", "13.10%, 13.20%, 13.30%, 13.40%, 13.50%");
       }
     }
   }, [term, dynamicRates, form]);
