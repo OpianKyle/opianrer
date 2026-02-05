@@ -136,9 +136,8 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
-        {/* ... remaining tabs content unchanged ... */}
 
-  const [profileData, setProfileData] = useState({
+        <TabsContent value="profile" className="space-y-6">
     username: user?.username || "",
     email: user?.email || "",
     firstName: "",
