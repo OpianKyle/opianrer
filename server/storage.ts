@@ -97,6 +97,8 @@ export interface IStorage {
   getKanbanTask(id: number): Promise<KanbanTask | undefined>;
   createKanbanTask(task: InsertKanbanTask): Promise<KanbanTask>;
   updateKanbanTask(id: number, task: Partial<InsertKanbanTask>): Promise<KanbanTask | undefined>;
+  deleteKanbanTask(id: number): Promise<boolean>;
+
   // CDN Quotation methods
   getCdnQuotations(clientId: number): Promise<CdnQuotation[]>;
   createCdnQuotation(quotation: InsertCdnQuotation): Promise<CdnQuotation>;
@@ -615,6 +617,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(kanbanTasks.id, id))
       .returning();
     return task || undefined;
+  }
+
+  async deleteKanbanTask(id: number): Promise<boolean> {
+    const result = await db.delete(kanbanTasks).where(eq(kanbanTasks.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getCdnQuotations(clientId: number): Promise<CdnQuotation[]> {

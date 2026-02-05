@@ -5,7 +5,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { insertClientSchema, insertDocumentSchema, insertAppointmentSchema, insertTeamMemberSchema, insertKanbanTaskSchema, insertCdnQuotationSchema, cdnQuotations } from "@shared/schema";
+import { insertClientSchema, insertDocumentSchema, insertAppointmentSchema, insertTeamMemberSchema, insertKanbanTaskSchema, insertCdnQuotationSchema, cdnQuotations, interestRates, insertInterestRateSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -1240,22 +1240,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
         yPos -= 15;
       });
 
-      // === PAGE 3: CONCLUSION ===
+      // === PAGE 3: WHY PRIVATE EQUITY ===
       const page3 = pdfDoc.addPage([595.28, 841.89]);
       addFooter(page3);
       addLogo(page3);
       yPos = 750;
 
-      page3.drawText("Conclusion & Next Steps", { x: leftMargin, y: yPos, size: 14, font: boldFont });
+      page3.drawText("Why Private Equity?", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 25;
+
+      const whyPEReasons = [
+        "• Higher Returns: PE typically outperforms stocks & bonds.",
+        "• Active Value Creation: Hands-on management improves business performance.",
+        "• Lower Volatility: Unlike public markets, PE is less exposed to short-term fluctuations."
+      ];
+
+      whyPEReasons.forEach(reason => {
+        page3.drawText(reason, { x: leftMargin, y: yPos, size: 11, font });
+        yPos -= 20;
+      });
+
+      // === PAGE 4: PROJECTED RETURNS ===
+      const page4 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page4);
+      addLogo(page4);
+      yPos = 750;
+
+      page4.drawText("Projected Returns & Cash Flow", { x: leftMargin, y: yPos, size: 12, font: boldFont });
       yPos -= 30;
 
-      const conclusionText = "This proposal represents a unique opportunity to participate in high-growth private equity investments. We look forward to discussing this strategy further and tailoring it to your specific financial goals.";
-      yPos = drawJustifiedText(page3, conclusionText, leftMargin, yPos, contentWidth, font, 11);
+      const cashFlowData = [
+        ["Year", "Shares Issued", "Div Allocation", "Div Return", "Growth (%)", "Investment Value"],
+        ["Year 0", "-", "-", "-", "-", `R${quotation.investmentAmount.toLocaleString()}, 00`],
+        ["Year 1", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year1Return).toLocaleString()}`, `${((year1Return / quotation.investmentAmount) * 100).toFixed(2)}%`, `R${Math.round(year1Value).toLocaleString()}`],
+        ["Year 2", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year2Return).toLocaleString()}`, `${((year2Return / year1Value) * 100).toFixed(2)}%`, `R${Math.round(year2Value).toLocaleString()}`],
+        ["Year 3", Math.floor(sharesIssued).toLocaleString(), (quotation.yearlyDivAllocation || 0).toFixed(3), `R${Math.round(year3Return).toLocaleString()}`, `${((year3Return / year2Value) * 100).toFixed(2)}%`, `R${Math.round(year3Value).toLocaleString()}`]
+      ];
+
+      const colWidths = [60, 85, 85, 85, 70, 100];
+      let tableTop = yPos;
+
+      cashFlowData.forEach((row, rowIndex) => {
+        const currentY = tableTop - (rowIndex * 25);
+        const isHeader = rowIndex === 0;
+        let xPos = leftMargin;
+        row.forEach((cell, colIndex) => {
+          page4.drawRectangle({ x: xPos, y: currentY - 25, width: colWidths[colIndex], height: 25, borderColor: rgb(0, 0, 0), borderWidth: 1 });
+          page4.drawText(cell, { x: xPos + 4, y: currentY - 15, size: 9, font: isHeader ? boldFont : font });
+          xPos += colWidths[colIndex];
+        });
+      });
+
+      yPos = tableTop - (cashFlowData.length * 25) - 25;
+
+      const notes = [
+        "• Note: While returns are based on historical PE performance; actual results may vary.",
+        "• Fund Value is non liquid",
+        "• The investment is locked into the period with no access to investment"
+      ];
+
+      notes.forEach(note => {
+        page4.drawText(note, { x: leftMargin, y: yPos, size: 11, font });
+        yPos -= 20;
+      });
 
       yPos -= 40;
-      page3.drawText("Sincerely,", { x: leftMargin, y: yPos, size: 11, font });
+      page4.drawText("Risk Mitigation Strategy", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 30;
+
+      const riskIntro = "To safeguard capital while pursuing high returns, we implement:";
+      yPos = drawJustifiedText(page4, riskIntro, leftMargin, yPos, contentWidth, font, 11);
       yPos -= 25;
-      page3.drawText("The Opian Capital Team", { x: leftMargin, y: yPos, size: 11, font: boldFont });
+
+      const riskStrategies = [
+        "• Diversification across 1-5 high-growth potential companies",
+        "• Due Diligence on management teams, financials, and market trends",
+        "• Structured Exit Plans (Share swops, IPO, recapitalization, buyouts)",
+        "• Co-Investment Model (Reduces exposure via partnerships)"
+      ];
+
+      riskStrategies.forEach(strategy => {
+        page4.drawText(strategy, { x: leftMargin, y: yPos, size: 11, font });
+        yPos -= 20;
+      });
+
+      yPos -= 30;
+      page4.drawText("Why Invest With Us?", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 30;
+
+      const whyUsPoints = [
+        "• Industry Expertise: Deep knowledge of South African & African markets",
+        "• Transparent Fees: Performance-based compensation (2% management fee + 20% carry)",
+        "• Aligned Interests: We invest alongside clients",
+        "• Ownership: We take ownership and management stake in companies we invest in"
+      ];
+
+      whyUsPoints.forEach(point => {
+        page4.drawText(point, { x: leftMargin, y: yPos, size: 11, font });
+        yPos -= 20;
+      });
+
+      // === PAGE 5: NEXT STEPS ===
+      const page5 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page5);
+      addLogo(page5);
+      yPos = 750;
+
+      page5.drawText("Next Steps", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 30;
+
+      const nextSteps = [
+        "1. Decision Taking: Deciding on risk appetite & capital to be invested",
+        "2. FAIS Process: Making investment and completing documentation",
+        "3. Capital Deployment: We begin investment within 2-6 weeks post due diligence.",
+        "4. Quarterly Reporting: Transparent updates on performance."
+      ];
+
+      nextSteps.forEach(step => {
+        yPos = drawJustifiedText(page5, step, leftMargin, yPos, contentWidth, font, 11);
+        yPos -= 15;
+      });
+
+      yPos -= 30;
+      page5.drawText("Conclusion", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 30;
+
+      const conclusion = "This private equity strategy offers a compelling opportunity for superior growth on your investment by leveraging equity in high-growth, privately held businesses. With disciplined risk management and sector expertise, we are confident in delivering superior returns.";
+      yPos = drawJustifiedText(page5, conclusion, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 25;
+      const thankYou = "Thank you for your consideration. Please reach out to me if there are further concerns or let's discuss how we can tailor this strategy to your goals.";
+      yPos = drawJustifiedText(page5, thankYou, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 40;
+      page5.drawText("Kind Regards", { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      yPos -= 40;
+
+      const disclaimerText = "*Disclaimer: This proposal is for illustrative purposes only. Past performance is not indicative of future results. Private equity involves risk, including potential loss of capital. Investors should conduct independent due diligence before committing funds.";
+      yPos = drawJustifiedText(page5, disclaimerText, leftMargin, yPos, contentWidth, font, 9, 15);
+      yPos -= 25;
+
+      const proposalText = "*This proposal, when signed and accepted, will become part of the Agreement with the client";
+      yPos = drawJustifiedText(page5, proposalText, leftMargin, yPos, contentWidth, font, 9, 15);
+
+      // === PAGE 6: CLIENT CONFIRMATION ===
+      const page6 = pdfDoc.addPage([595.28, 841.89]);
+      addFooter(page6);
+      addLogo(page6);
+      yPos = 750;
+
+      page6.drawText("CLIENT CONFIRMATION", { x: leftMargin, y: yPos, size: 12, font: boldFont });
+      yPos -= 30;
+
+      const confirmationText = "I, The undersigned, hereby accept the proposal as outlined in the documentation contained herein. I confirmed that I had made an informed decision based on my own financial product experience and/or external consultation with professionals. I confirm that I have the financial capacity to enter into this agreement and also the additional financial resources which allow me the opportunity to enter the waiting periods/ lock up periods/ and or risk associated with this product";
+      yPos = drawJustifiedText(page6, confirmationText, leftMargin, yPos, contentWidth, font, 11);
+
+      yPos -= 60;
+      page6.drawText("__________________________", { x: leftMargin, y: yPos, size: 12, font });
+      page6.drawText("__________________________", { x: leftMargin + 250, y: yPos, size: 12, font });
+      yPos -= 15;
+      page6.drawText("Client Signature", { x: leftMargin, y: yPos, size: 10, font });
+      page6.drawText("Date", { x: leftMargin + 250, y: yPos, size: 10, font });
+
+      yPos -= 50;
+      page6.drawText("__________________________", { x: leftMargin, y: yPos, size: 12, font });
+      page6.drawText("__________________________", { x: leftMargin + 250, y: yPos, size: 12, font });
+      yPos -= 15;
+      page6.drawText("Witness Signature", { x: leftMargin, y: yPos, size: 10, font });
+      page6.drawText("Date", { x: leftMargin + 250, y: yPos, size: 10, font });
 
       const pdfBytes = await pdfDoc.save();
       const fileName = `Proposal_${quotation.clientName.replace(/\s+/g, "_")}_${Date.now()}.pdf`;
@@ -1594,15 +1746,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId = data.userId;
           userConnections.set(userId, ws);
           
-          // Update user online status
-          await storage.updateUser(userId, { isOnline: true, lastSeen: new Date() });
-          
+          // Process user online status
+          await storage.updateUser(Number(userId), { isOnline: true, lastSeen: new Date() });
+
           // Broadcast user came online
-          broadcastPresenceUpdate(userId, true);
+          broadcastPresenceUpdate(Number(userId), true);
           console.log(`User ${userId} connected via WebSocket`);
         } else if (data.type === 'heartbeat' && userId) {
           // Update last seen timestamp
-          await storage.updateUser(userId, { lastSeen: new Date() });
+          await storage.updateUser(Number(userId), { lastSeen: new Date() });
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
