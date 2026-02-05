@@ -637,7 +637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // NEW PAGE: INCOME PROJECTIONS
       page = doc.addPage();
-      y = height - 50;
+      const { height: pageHeight, width: pageWidth } = page.getSize();
+      y = pageHeight - 50;
 
       page.drawText(`INCOME PROJECTIONS`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 2;
@@ -695,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let currentLine = '';
         words.forEach(word => {
           const testLine = currentLine ? `${currentLine} ${word}` : word;
-          if (font.widthOfTextAtSize(testLine, 9) > width - (margin * 2)) {
+          if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
             page.drawText(currentLine, { x: margin, y, size: 9, font });
             y -= 11;
             currentLine = word;
@@ -714,19 +715,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 1.5;
       const validityText = "This offer remains valid for a period of 14 days from the date of issuance, it is imperative that the receipt of funds occur within this specific time frame. All required documentation must be completed, and funds transfers finalized on or before expiration of the offers validity period. Should any information remain outstanding or incomplete, funds will be processed, a new offer must be issued and duly executed before the terms can be formally accepted by the company.";
       
-      const words = validityText.split(' ');
-      let currentLine = '';
-      words.forEach(word => {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (font.widthOfTextAtSize(testLine, 9) > width - (margin * 2)) {
-          page.drawText(currentLine, { x: margin, y, size: 9, font });
+      const wordsValidity = validityText.split(' ');
+      let currentLineValidity = '';
+      wordsValidity.forEach(word => {
+        const testLine = currentLineValidity ? `${currentLineValidity} ${word}` : word;
+        if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+          page.drawText(currentLineValidity, { x: margin, y, size: 9, font });
           y -= 11;
-          currentLine = word;
+          currentLineValidity = word;
         } else {
-          currentLine = testLine;
+          currentLineValidity = testLine;
         }
       });
-      page.drawText(currentLine, { x: margin, y, size: 9, font });
+      page.drawText(currentLineValidity, { x: margin, y, size: 9, font });
       y -= lineHeight * 3;
 
       // PLACEMENT AND ADMIN FEES
@@ -773,8 +774,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // SUPPORT DOCUMENTATION
       page.drawText(`SUPPORT DOCUMENTATION`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
-      const docs = ["Application form", "Copy of Identity Document / Passport", "Proof of Address", "Bank Statement"];
-      docs.forEach(docName => {
+      const docsList = ["Application form", "Copy of Identity Document / Passport", "Proof of Address", "Bank Statement"];
+      docsList.forEach(docName => {
         page.drawText(`[ ] ${docName}`, { x: margin, y, size: 10, font });
         y -= lineHeight;
       });
