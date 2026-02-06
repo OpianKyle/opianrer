@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface IncomeProjectionsTableProps {
   initialCapital: number;
@@ -18,12 +19,28 @@ export interface ProjectionRow {
   annualised: number;
 }
 
+const PRESET_RATES: Record<number, number[]> = {
+  1: [9.75],
+  3: [11.75, 11.85, 11.95],
+  5: [13.10, 13.20, 13.30, 13.40, 13.50]
+};
+
 export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeProjectionsTableProps) {
   const [years, setYears] = useState(5);
   const [useSingleRate, setUseSingleRate] = useState(false);
   const [singleRate, setSingleRate] = useState(13.10);
   const [stepIncrease, setStepIncrease] = useState(0.10);
-  const [rates, setRates] = useState<number[]>([13.10, 13.20, 13.30, 13.40, 13.50]);
+  const [rates, setRates] = useState<number[]>(PRESET_RATES[5]);
+
+  // Update rates when years change based on preset
+  useEffect(() => {
+    if (PRESET_RATES[years]) {
+      setRates(PRESET_RATES[years]);
+      if (years === 1) setSingleRate(9.75);
+      else if (years === 3) setSingleRate(11.75);
+      else if (years === 5) setSingleRate(13.10);
+    }
+  }, [years]);
 
   const projections = useMemo(() => {
     const rows: ProjectionRow[] = [];
@@ -77,13 +94,19 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="years" className="text-xs font-bold uppercase">Years</Label>
-              <Input
-                id="years"
-                type="number"
-                value={years}
-                onChange={(e) => setYears(Math.max(1, parseInt(e.target.value) || 1))}
-                className="h-8 rounded-none bg-yellow-50/50"
-              />
+              <Select 
+                value={years.toString()} 
+                onValueChange={(val) => setYears(parseInt(val))}
+              >
+                <SelectTrigger id="years" className="h-8 rounded-none bg-yellow-50/50">
+                  <SelectValue placeholder="Select years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 Year</SelectItem>
+                  <SelectItem value="3">3 Years</SelectItem>
+                  <SelectItem value="5">5 Years</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex flex-col justify-center space-y-2">
