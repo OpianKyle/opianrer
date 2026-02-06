@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, addYears, parseISO } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IncomeProjectionsTable } from "./income-projections-table";
 
 const INTEREST_RATES: Record<number, string[]> = {
   1: ["9.75"],
@@ -308,6 +309,11 @@ export function QuotationForm({ client }: { client: Client }) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-6 pt-6 border-t">
+              <h3 className="text-lg font-bold uppercase tracking-tight">Income Projections</h3>
+              <IncomeProjectionsTable initialCapital={Number(investmentAmount) || 0} />
             </div>
 
             <div className="flex justify-end pt-6 border-t">

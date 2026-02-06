@@ -643,32 +643,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`INCOME PROJECTIONS`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 2;
 
-      page.drawText(`Year`, { x: margin, y, size: 10, font: boldFont });
-      page.drawText(`Capital Value`, { x: margin + 100, y, size: 10, font: boldFont });
-      page.drawText(`Return Forecast`, { x: margin + 300, y, size: 10, font: boldFont });
-      y -= lineHeight * 1.5;
+      // Draw Table Headers
+      const colWidths = [50, 120, 100, 120, 100];
+      const headers = ['Year', 'Capital Value', 'Div Forecast', 'Projected Div', 'Annualised'];
+      let xPos = margin;
+      
+      // Draw header row background
+      page.drawRectangle({
+        x: margin,
+        y: y - 5,
+        width: pageWidth - (margin * 2),
+        height: lineHeight + 5,
+        color: rgb(0.9, 0.9, 0.9),
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
+      });
+
+      headers.forEach((header, i) => {
+        page.drawText(header, { x: xPos + 5, y, size: 9, font: boldFont });
+        xPos += colWidths[i];
+      });
+      y -= lineHeight + 5;
 
       // Current row
-      page.drawText(`Current`, { x: margin, y, size: 10, font });
-      page.drawText(`R ${quotation.investmentAmount.toLocaleString()}`, { x: margin + 100, y, size: 10, font });
-      page.drawText(`Projected: ${quotation.interestRate}`, { x: margin + 300, y, size: 10, font });
-      y -= lineHeight * 1.5;
+      xPos = margin;
+      const currentValues = [
+        'Current', 
+        `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 
+        `${quotation.interestRate}%`, 
+        '-', 
+        `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      ];
+      
+      currentValues.forEach((val, i) => {
+        page.drawRectangle({
+          x: xPos,
+          y: y - 5,
+          width: colWidths[i],
+          height: lineHeight + 5,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1,
+        });
+        page.drawText(val, { x: xPos + 5, y, size: 9, font });
+        xPos += colWidths[i];
+      });
+      y -= lineHeight + 5;
 
       // Projections for each year up to the term
-      const yearlyDiv = quotation.yearlyDivAllocation || 0;
-      const shares = (quotation.investmentAmount / 8);
+      const yearlyDivAllocation = Number(quotation.interestRate) || 13.10;
       let currentVal = quotation.investmentAmount;
 
       for (let i = 1; i <= Math.min(5, quotation.term); i++) {
-        const yearDiv = shares * yearlyDiv;
-        currentVal += yearDiv;
+        const rate = yearlyDivAllocation + ((i - 1) * 0.1); // Match the step logic if applicable
+        const divAmount = currentVal * (rate / 100);
+        const annualised = currentVal + divAmount;
         
-        page.drawText(`${i}`, { x: margin, y, size: 10, font });
-        page.drawText(`R ${Math.round(currentVal).toLocaleString()}`, { x: margin + 100, y, size: 10, font });
-        page.drawText(`R ${Math.round(yearDiv).toLocaleString()}`, { x: margin + 300, y, size: 10, font });
-        y -= lineHeight * 1.5;
+        xPos = margin;
+        const rowValues = [
+          `${i}`,
+          `R ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          `${rate.toFixed(2)}%`,
+          `R ${divAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          `R ${annualised.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        ];
+
+        rowValues.forEach((val, j) => {
+          page.drawRectangle({
+            x: xPos,
+            y: y - 5,
+            width: colWidths[j],
+            height: lineHeight + 5,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
+          page.drawText(val, { x: xPos + 5, y, size: 9, font: j === 4 ? boldFont : font });
+          xPos += colWidths[j];
+        });
+        
+        currentVal = annualised;
+        y -= lineHeight + 5;
       }
-      y -= lineHeight * 1.5;
+      y -= lineHeight * 2;
 
       // MODELLED FUND CHOICES Section
       page.drawText(`MODELLED FUND CHOICES`, { x: margin, y, size: 11, font: boldFont });
