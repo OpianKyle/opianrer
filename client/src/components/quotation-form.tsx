@@ -13,6 +13,7 @@ import { format, addYears, parseISO } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IncomeProjectionsTable } from "./income-projections-table";
+import opianLogo from "@assets/image_1770363247026.png";
 
 const INTEREST_RATES: Record<number, string[]> = {
   1: ["9.75"],
@@ -132,7 +133,10 @@ export function QuotationForm({ client }: { client: Client }) {
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-none border-0">
-      <CardHeader className="text-center border-b mb-6">
+      <div className="flex justify-start p-4">
+        <img src={opianLogo} alt="Opian Capital Logo" className="h-16 w-auto object-contain" />
+      </div>
+      <CardHeader className="text-center border-b mb-6 pt-0">
         <CardTitle className="text-xl font-bold uppercase tracking-tight">
           Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note {term} Year Term
         </CardTitle>

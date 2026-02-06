@@ -561,9 +561,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const font = await doc.embedFont(StandardFonts.Helvetica);
       const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
 
+      // Load logo images
+      let opianLogo: any = null;
+      let flexMaxLogo: any = null;
+      try {
+        const opianLogoPath = path.join(process.cwd(), "client/public/opian-logo.png");
+        const flexMaxLogoPath = path.join(process.cwd(), "client/public/flexmax-logo.png");
+        
+        const opianLogoBytes = await fs.promises.readFile(opianLogoPath);
+        const flexMaxLogoBytes = await fs.promises.readFile(flexMaxLogoPath);
+        
+        opianLogo = await doc.embedPng(opianLogoBytes);
+        flexMaxLogo = await doc.embedPng(flexMaxLogoBytes);
+      } catch (error) {
+        console.warn("Could not load logo images for download route:", error);
+      }
+
       let y = height - 50;
       const margin = 50;
       const lineHeight = 15;
+
+      // Draw Logos
+      if (opianLogo) {
+        const logoWidth = 100;
+        const logoHeight = 30;
+        page.drawImage(opianLogo, {
+          x: margin,
+          y: height - 60,
+          width: logoWidth,
+          height: logoHeight
+        });
+      }
+      if (flexMaxLogo) {
+        const logoWidth = 100;
+        const logoHeight = 25;
+        page.drawImage(flexMaxLogo, {
+          x: width - margin - logoWidth,
+          y: height - 55,
+          width: logoWidth,
+          height: logoHeight
+        });
+      }
+      
+      y -= 40; // Adjust starting y after logos
 
       // Title
       page.drawText(`Quotation for FlexMax Capital Appreciator Fixed Deposit Note ${quotation.term} Year Term`, {
