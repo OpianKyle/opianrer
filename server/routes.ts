@@ -987,18 +987,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageWidth = 595.28;
       const contentWidth = pageWidth - leftMargin - rightMargin;
 
-      // Load logo image
-      let logoImage: any = null;
+      // Load logo images
+      let opianLogo: any = null;
+      let flexMaxLogo: any = null;
       try {
-        const logoPath = path.join(__dirname, "../attached_assets/image_1756974781134.png");
-        const logoBytes = await fs.promises.readFile(logoPath);
-        logoImage = await pdfDoc.embedPng(logoBytes);
+        const opianLogoPath = path.join(__dirname, "../attached_assets/image_1770362658653.png");
+        const flexMaxLogoPath = path.join(__dirname, "../attached_assets/image_1770362682173.png");
+        
+        const opianLogoBytes = await fs.promises.readFile(opianLogoPath);
+        const flexMaxLogoBytes = await fs.promises.readFile(flexMaxLogoPath);
+        
+        opianLogo = await pdfDoc.embedPng(opianLogoBytes);
+        flexMaxLogo = await pdfDoc.embedPng(flexMaxLogoBytes);
       } catch (error) {
-        console.warn("Could not load logo image:", error);
+        console.warn("Could not load logo images:", error);
       }
 
-
       // === Helper Functions ===
+      const addLogos = (page: any) => {
+        if (opianLogo) {
+          const logoWidth = 150;
+          const logoHeight = 45;
+          page.drawImage(opianLogo, {
+            x: leftMargin,
+            y: 780,
+            width: logoWidth,
+            height: logoHeight
+          });
+        }
+        if (flexMaxLogo) {
+          const logoWidth = 140;
+          const logoHeight = 35;
+          page.drawImage(flexMaxLogo, {
+            x: pageWidth - rightMargin - logoWidth,
+            y: 785,
+            width: logoWidth,
+            height: logoHeight
+          });
+        }
+      };
+
       const drawJustifiedText = (
         page: any,
         text: string,
@@ -1072,22 +1100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      const addLogo = (page: any) => {
-        if (logoImage) {
-          const logoWidth = 170;
-          const logoHeight = 50;
-          const x = pageWidth - logoWidth - 25;
-          const y = 780;
-          
-          page.drawImage(logoImage, {
-            x,
-            y,
-            width: logoWidth,
-            height: logoHeight
-          });
-        }
-      };
-
       // === Calculations ===
       const targetValue = quotation.investmentAmount * (1 + (Number(quotation.interestRate) || 0) / 100);
       const totalProfit = targetValue - quotation.investmentAmount;
@@ -1140,7 +1152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // === PAGE 1: MAIN CONTENT ===
       const page1 = pdfDoc.addPage([595.28, 841.89]);
       addFooter(page1);
-      addLogo(page1);
+      addLogos(page1);
       let yPos = 680;
 
       // Title with dynamic values
@@ -1225,7 +1237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // === PAGE 2: INCOME PROJECTIONS ===
       const page2 = pdfDoc.addPage([595.28, 841.89]);
       addFooter(page2);
-      addLogo(page2);
+      addLogos(page2);
       yPos = 750;
 
       page2.drawText("INCOME PROJECTIONS", { x: leftMargin, y: yPos, size: 12, font: boldFont });
@@ -1319,7 +1331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // === PAGE 3: ADDITIONAL INFO ===
       const page3 = pdfDoc.addPage([595.28, 841.89]);
       addFooter(page3);
-      addLogo(page3);
+      addLogos(page3);
       yPos = 750;
 
       // Validity
