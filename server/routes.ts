@@ -605,13 +605,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`INVESTMENT SUMMARY`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
 
+      const boostedAmount = quotation.investmentAmount * (1 + (quotation.investmentBooster || 0) / 100);
+      const firstYearRate = quotation.term === 1 ? quotation.interestRate : (quotation.term === 3 ? "11.75%" : "13.10%");
+
       const summaryItems = [
         ['Investment amount', `R ${quotation.investmentAmount.toLocaleString()}`],
-        ['Amount allocated with enhancement', `R ${quotation.investmentAmount.toLocaleString()}`],
+        ['Investment Booster', `${quotation.investmentBooster || 0}%`],
+        ['Amount allocated with enhancement', `R ${boostedAmount.toLocaleString()}`],
         ['Term in years', `${quotation.term}`],
         ['Commencement date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
-        ['Percentage returned first year', `${quotation.term === 1 ? '90%' : 'N/A'}`],
-        ['Income allocated to capital in first year', quotation.term === 1 ? `R ${(quotation.investmentAmount * 0.9).toLocaleString()}` : 'N/A'],
+        ['Percentage returned first year', firstYearRate],
+        ['Income allocated to capital in first year', `R ${(boostedAmount * (parseFloat(firstYearRate) / 100)).toLocaleString()}`],
         ['Liquidity', 'None'],
         ['', ''],
         ['Contract Start date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
@@ -690,11 +694,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight + 5;
 
       // Projections for each year up to the term
-      const yearlyDivAllocation = Number(quotation.interestRate) || 13.10;
-      let currentVal = quotation.investmentAmount;
+      const yearlyDivAllocation = quotation.term === 1 ? Number(quotation.interestRate) : (quotation.term === 3 ? 11.75 : 13.10);
+      const boostedAmountLoop = quotation.investmentAmount * (1 + (quotation.investmentBooster || 0) / 100);
+      let currentVal = boostedAmountLoop;
 
       for (let i = 1; i <= Math.min(5, quotation.term); i++) {
-        const rate = yearlyDivAllocation + ((i - 1) * 0.1); // Match the step logic if applicable
+        let rate = yearlyDivAllocation;
+        if (quotation.term === 3) {
+          rate = [11.75, 11.85, 11.95][i-1] || 11.95;
+        } else if (quotation.term === 5) {
+          rate = [13.10, 13.20, 13.30, 13.40, 13.50][i-1] || 13.50;
+        }
+        
         const divAmount = currentVal * (rate / 100);
         const annualised = currentVal + divAmount;
         
@@ -918,6 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interestRate: result.data.interestRate.toString(), // Ensure it's a string
         maturityValue: Math.round(Number(result.data.maturityValue) || 0), // Ensure it's an integer for the DB
         investmentAmount: Math.round(Number(result.data.investmentAmount) || 0),
+        investmentBooster: Math.round(Number(result.data.investmentBooster) || 0),
         yearlyDivAllocation: Math.round(Number(result.data.yearlyDivAllocation) || 975),
       };
       const quotation = await storage.createCdnQuotation(quotationData as any);

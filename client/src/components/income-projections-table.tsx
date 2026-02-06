@@ -8,7 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface IncomeProjectionsTableProps {
   initialCapital: number;
+  investmentBooster?: number;
+  years: number;
+  setYears: (years: number) => void;
   onDataChange?: (data: ProjectionRow[]) => void;
+  isAdmin?: boolean;
 }
 
 export interface ProjectionRow {
@@ -25,12 +29,15 @@ const PRESET_RATES: Record<number, number[]> = {
   5: [13.10, 13.20, 13.30, 13.40, 13.50]
 };
 
-export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeProjectionsTableProps) {
-  const [years, setYears] = useState(5);
+export function IncomeProjectionsTable({ initialCapital, investmentBooster = 0, years, setYears, onDataChange, isAdmin = false }: IncomeProjectionsTableProps) {
   const [useSingleRate, setUseSingleRate] = useState(false);
   const [singleRate, setSingleRate] = useState(13.10);
   const [stepIncrease, setStepIncrease] = useState(0.10);
   const [rates, setRates] = useState<number[]>(PRESET_RATES[5]);
+
+  const boostedCapital = useMemo(() => {
+    return initialCapital * (1 + (investmentBooster / 100));
+  }, [initialCapital, investmentBooster]);
 
   // Update rates when years change based on preset
   useEffect(() => {
@@ -44,7 +51,7 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
 
   const projections = useMemo(() => {
     const rows: ProjectionRow[] = [];
-    let currentCapital = initialCapital;
+    let currentCapital = boostedCapital;
 
     for (let i = 0; i < years; i++) {
       let rate: number;
@@ -69,7 +76,7 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
     }
     
     return rows;
-  }, [initialCapital, years, useSingleRate, singleRate, stepIncrease, rates]);
+  }, [boostedCapital, years, useSingleRate, singleRate, stepIncrease, rates]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-ZA', {
@@ -115,6 +122,7 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
                 <Switch 
                   checked={useSingleRate} 
                   onCheckedChange={setUseSingleRate} 
+                  disabled={!isAdmin}
                 />
                 <span className="text-xs font-medium">{useSingleRate ? 'Step Increase' : 'Manual Rates'}</span>
               </div>
@@ -130,7 +138,8 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
                     step="0.01"
                     value={singleRate}
                     onChange={(e) => setSingleRate(parseFloat(e.target.value) || 0)}
-                    className="h-8 rounded-none bg-yellow-50/50"
+                    disabled={!isAdmin}
+                    className="h-8 rounded-none bg-yellow-50/50 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -141,7 +150,8 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
                     step="0.01"
                     value={stepIncrease}
                     onChange={(e) => setStepIncrease(parseFloat(e.target.value) || 0)}
-                    className="h-8 rounded-none bg-yellow-50/50"
+                    disabled={!isAdmin}
+                    className="h-8 rounded-none bg-yellow-50/50 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
               </>
@@ -154,7 +164,8 @@ export function IncomeProjectionsTable({ initialCapital, onDataChange }: IncomeP
                     const newRates = e.target.value.split(',').map(v => parseFloat(v.trim()) || 0);
                     setRates(newRates);
                   }}
-                  className="h-8 rounded-none bg-yellow-50/50"
+                  disabled={!isAdmin}
+                  className="h-8 rounded-none bg-yellow-50/50 disabled:opacity-70 disabled:cursor-not-allowed"
                   placeholder="13.10, 13.20..."
                 />
               </div>

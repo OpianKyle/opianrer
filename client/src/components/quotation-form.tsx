@@ -51,13 +51,16 @@ export function QuotationForm({ client }: { client: Client }) {
       preparedByCell: "",
       preparedByOffice: "0861 263 346",
       preparedByEmail: user?.email || "",
+      investmentBooster: 0,
     },
   });
 
   const investmentAmount = form.watch("investmentAmount");
+  const investmentBooster = form.watch("investmentBooster") || 0;
   const interestRate = form.watch("interestRate");
   const term = form.watch("term");
   const commencementDate = form.watch("commencementDate");
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     if (commencementDate && term) {
@@ -69,7 +72,7 @@ export function QuotationForm({ client }: { client: Client }) {
   }, [commencementDate, term, form]);
 
   useEffect(() => {
-    const amount = Number(investmentAmount) || 0;
+    const amount = (Number(investmentAmount) || 0) * (1 + (Number(investmentBooster) / 100));
     const rate = term === 1 ? (parseFloat(interestRate) || 0) : 0;
     
     let maturity = 0;
@@ -200,6 +203,19 @@ export function QuotationForm({ client }: { client: Client }) {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="investmentBooster"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-4 space-y-0">
+                      <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Investment Booster (%):</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} className="bg-yellow-200 border-0 h-8 rounded-none" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="space-y-4">
@@ -313,7 +329,13 @@ export function QuotationForm({ client }: { client: Client }) {
 
             <div className="space-y-6 pt-6 border-t">
               <h3 className="text-lg font-bold uppercase tracking-tight">Income Projections</h3>
-              <IncomeProjectionsTable initialCapital={Number(investmentAmount) || 0} />
+              <IncomeProjectionsTable 
+                initialCapital={Number(investmentAmount) || 0} 
+                investmentBooster={Number(investmentBooster) || 0}
+                years={term}
+                setYears={(y) => form.setValue("term", y)}
+                isAdmin={isAdmin}
+              />
             </div>
 
             <div className="flex justify-end pt-6 border-t">
