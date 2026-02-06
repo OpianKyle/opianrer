@@ -134,7 +134,7 @@ export function QuotationForm({ client }: { client: Client }) {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-none border-0">
       <div className="flex justify-start p-4">
-        <img src={opianLogo} alt="Opian Capital Logo" className="h-16 w-auto object-contain" />
+        <img src={opianLogo} alt="Opian Capital Logo" className="h-24 w-auto object-contain" />
       </div>
       <CardHeader className="text-center border-b mb-6 pt-0">
         <CardTitle className="text-xl font-bold uppercase tracking-tight">

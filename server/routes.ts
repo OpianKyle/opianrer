@@ -583,27 +583,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Draw Logos
       if (opianLogo) {
-        const logoWidth = 100;
-        const logoHeight = 30;
+        const logoWidth = 150;
+        const logoHeight = 45;
         page.drawImage(opianLogo, {
           x: margin,
-          y: height - 60,
+          y: height - 75,
           width: logoWidth,
           height: logoHeight
         });
       }
       if (flexMaxLogo) {
-        const logoWidth = 100;
-        const logoHeight = 25;
+        const logoWidth = 150;
+        const logoHeight = 35;
         page.drawImage(flexMaxLogo, {
           x: width - margin - logoWidth,
-          y: height - 55,
+          y: height - 70,
           width: logoWidth,
           height: logoHeight
         });
       }
       
-      y -= 40; // Adjust starting y after logos
+      y -= 60; // Adjust starting y after logos
 
       // Title
       page.drawText(`Quotation for FlexMax Capital Appreciator Fixed Deposit Note ${quotation.term} Year Term`, {
@@ -816,6 +816,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         words.forEach(word => {
           const testLine = currentLine ? `${currentLine} ${word}` : word;
           if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+            if (y < 70) {
+              page = doc.addPage();
+              y = page.getSize().height - 50;
+            }
             page.drawText(currentLine, { x: margin, y, size: 9, font });
             y -= 11;
             currentLine = word;
@@ -823,6 +827,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentLine = testLine;
           }
         });
+        if (y < 70) {
+          page = doc.addPage();
+          y = page.getSize().height - 50;
+        }
         page.drawText(currentLine, { x: margin, y, size: 9, font });
         y -= 15;
       });
@@ -830,6 +838,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight;
 
       // VALIDITY Section
+      if (y < 100) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(`VALIDITY`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       const validityText = "This offer remains valid for a period of 14 days from the date of issuance, it is imperative that the receipt of funds occur within this specific time frame. All required documentation must be completed, and funds transfers finalized on or before expiration of the offers validity period. Should any information remain outstanding or incomplete, funds will be processed, a new offer must be issued and duly executed before the terms can be formally accepted by the company.";
@@ -839,6 +851,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       wordsValidity.forEach(word => {
         const testLine = currentLineValidity ? `${currentLineValidity} ${word}` : word;
         if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+          if (y < 70) {
+            page = doc.addPage();
+            y = page.getSize().height - 50;
+          }
           page.drawText(currentLineValidity, { x: margin, y, size: 9, font });
           y -= 11;
           currentLineValidity = word;
@@ -846,10 +862,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentLineValidity = testLine;
         }
       });
+      if (y < 70) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(currentLineValidity, { x: margin, y, size: 9, font });
       y -= lineHeight * 3;
 
       // PLACEMENT AND ADMIN FEES
+      if (y < 120) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(`PLACEMENT AND ADMIN FEES`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
@@ -866,6 +890,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 3;
 
       // COMMISSION
+      if (y < 100) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(`COMMISSION`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
@@ -878,6 +906,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 3;
 
       // AGREEMENT DETAILS
+      if (y < 150) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(`AGREEMENT DETAILS`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       page.drawText(`Agreement number:`, { x: margin, y, size: 10, font });
@@ -891,6 +923,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 3;
 
       // SUPPORT DOCUMENTATION
+      if (y < 100) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
       page.drawText(`SUPPORT DOCUMENTATION`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       const docsList = ["Application form", "Copy of Identity Document / Passport", "Proof of Address", "Bank Statement"];
