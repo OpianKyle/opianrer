@@ -17,7 +17,7 @@ Opian Core is a modern, full-stack customer relationship management application 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Database Provider**: Replit PostgreSQL (node-postgres)
 - **File Handling**: Multer for file uploads
 - **Session Management**: Express sessions with PostgreSQL storage
 - **Development**: Vite for development server and HMR
@@ -58,7 +58,7 @@ Abstracted storage interface (`IStorage`) with PostgreSQL database implementatio
 ## External Dependencies
 
 ### Core Dependencies
-- **@neondatabase/serverless**: Serverless PostgreSQL connection
+- **pg**: PostgreSQL client for Node.js
 - **drizzle-orm**: Type-safe database ORM
 - **@tanstack/react-query**: Server state management
 - **react-hook-form**: Form state management
@@ -124,6 +124,7 @@ Changelog:
 - July 25, 2025. Database migration to Replit PostgreSQL - Successfully migrated from Neon Database to Replit's built-in PostgreSQL service due to quota limitations; updated database connection from serverless to node-postgres, maintained all schema and functionality with automatic seeding
 - July 25, 2025. Neon Database restoration - Successfully connected to user's specific Neon database, migrated all table schemas and seeded with sample data, fully operational with WebSocket configuration
 - July 25, 2025. Neon Database restoration - Successfully connected to user's specific Neon database, migrated all table schemas and seeded with sample data, fully operational with WebSocket configuration
+- February 06, 2026. Project re-import to Replit - Migrated database connection from Neon serverless to Replit built-in PostgreSQL with node-postgres driver, provisioned database, pushed schema, verified application running correctly
 ```
 
 ## User Preferences
