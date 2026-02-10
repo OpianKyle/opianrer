@@ -17,11 +17,11 @@ import opianLogo from "@assets/image_1770363247026.png";
 
 const INTEREST_RATES: Record<number, string[]> = {
   1: ["9.75"],
-  3: ["10.25", "10.35", "10.45"],
-  5: ["11.50", "11.60", "11.70", "11.80", "11.90"]
+  3: ["11.75", "11.85", "11.95"],
+  5: ["13.10", "13.20", "13.30", "13.40", "13.50"]
 };
 
-export function IncomeProviderForm({ client }: { client: Client }) {
+export function QuotationForm({ client }: { client: Client }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: user } = useQuery<User>({ queryKey: ["/api/user"] });
@@ -41,21 +41,20 @@ export function IncomeProviderForm({ client }: { client: Client }) {
       clientName: `${client.firstName} ${client.surname}`,
       clientAddress: `${client.physicalAddress || ""}\n${client.physicalPostalCode || ""}`,
       clientPhone: client.cellPhone || "",
-      investmentAmount: 100000,
-      term: 3,
-      interestRate: "10.25",
-      yearlyDivAllocation: 10.25,
+      investmentAmount: 75000,
+      term: 1,
+      interestRate: "9.75",
+      yearlyDivAllocation: 9.75,
       calculationDate: new Date(),
       commencementDate: new Date(),
-      redemptionDate: addYears(new Date(), 3),
+      redemptionDate: addYears(new Date(), 1),
       preparedByName: user ? `${user.firstName} ${user.lastName}` : "",
       preparedByCell: "",
       preparedByOffice: "0861 263 346",
       preparedByEmail: user?.email || "",
-      investmentBooster: 5,
-      type: "income_provider",
-      incomeAllocation: "MONTHLY",
-      maturityValue: 100000,
+      investmentBooster: 0,
+      maturityValue: 82312,
+      type: "capital_appreciator",
     },
   });
 
@@ -77,19 +76,42 @@ export function IncomeProviderForm({ client }: { client: Client }) {
 
   useEffect(() => {
     const amount = (Number(investmentAmount) || 0) * (1 + (Number(investmentBooster) / 100));
-    // For income provider, capital remains constant or returns to base after term
-    form.setValue("maturityValue", Math.round(Number(investmentAmount) || 0));
-  }, [investmentAmount, investmentBooster, form]);
+    const rate = term === 1 ? (parseFloat(interestRate) || 0) : 0;
+    
+    let maturity = 0;
+    if (term === 1) {
+      maturity = amount + (amount * (rate / 100));
+    } else if (term === 3) {
+      // 11.75%, 11.85%, 11.95%
+      const r1 = 0.1175;
+      const r2 = 0.1185;
+      const r3 = 0.1195;
+      maturity = amount * (1 + r1) * (1 + r2) * (1 + r3);
+    } else if (term === 5) {
+      // 13.10, 13.20, 13.30, 13.40, 13.50
+      const r1 = 0.1310;
+      const r2 = 0.1320;
+      const r3 = 0.1330;
+      const r4 = 0.1340;
+      const r5 = 0.1350;
+      maturity = amount * (1 + r1) * (1 + r2) * (1 + r3) * (1 + r4) * (1 + r5);
+    }
+    
+    form.setValue("maturityValue", Math.round(maturity));
+  }, [investmentAmount, interestRate, term, form]);
 
+  // Update interest rate options when term changes
   useEffect(() => {
     const available = dynamicRates[term as keyof typeof dynamicRates];
     if (available && available.length > 0) {
       if (term === 1) {
         form.setValue("interestRate", available[0]);
       } else if (term === 3) {
-        form.setValue("interestRate", "10.25%, 10.35%, 10.45%");
+        // First 11.75, Second 11.85, Third 11.95
+        form.setValue("interestRate", "11.75%, 11.85%, 11.95%");
       } else if (term === 5) {
-        form.setValue("interestRate", "11.50%, 11.60%, 11.70%, 11.80%, 11.90%");
+        // 13.10, 13.20, 13.30, 13.40, 13.50
+        form.setValue("interestRate", "13.10%, 13.20%, 13.30%, 13.40%, 13.50%");
       }
     }
   }, [term, dynamicRates, form]);
@@ -98,13 +120,16 @@ export function IncomeProviderForm({ client }: { client: Client }) {
     mutationFn: async (data: InsertCdnQuotation) => {
       const res = await apiRequest("POST", "/api/cdn-quotations", data);
       const quotation = await res.json();
+      
+      // Automatically download PDF
       window.open(`/api/cdn-quotations/${quotation.id}/download`, "_blank");
+      
       return quotation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cdn-quotations", client.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/documents", client.id] });
-      toast({ title: "Income Provider Quotation created" });
+      toast({ title: "Quotation created and document saved" });
     },
   });
 
@@ -115,7 +140,7 @@ export function IncomeProviderForm({ client }: { client: Client }) {
       </div>
       <CardHeader className="text-center border-b mb-6 pt-0">
         <CardTitle className="text-xl font-bold uppercase tracking-tight">
-          Quotation Tool for FlexMax Income Provider Fixed Deposit Note {term} Year Term
+          Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note {term} Year Term
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -197,20 +222,6 @@ export function IncomeProviderForm({ client }: { client: Client }) {
                     </FormItem>
                   )}
                 />
-
-                <FormItem className="flex items-center gap-4 space-y-0">
-                  <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Booster Amount:</FormLabel>
-                  <FormControl>
-                    <div className="relative w-full">
-                      <span className="absolute left-2 top-1.5 text-sm">R</span>
-                      <Input 
-                        value={((Number(investmentAmount) || 0) * (Number(investmentBooster) / 100)).toLocaleString()} 
-                        disabled 
-                        className="bg-yellow-200 border-0 h-8 rounded-none pl-6" 
-                      />
-                    </div>
-                  </FormControl>
-                </FormItem>
               </div>
 
               <div className="space-y-4">
@@ -250,6 +261,7 @@ export function IncomeProviderForm({ client }: { client: Client }) {
                         onValueChange={(val) => {
                           const newTerm = parseInt(val);
                           field.onChange(newTerm);
+                          form.setValue("interestRate", INTEREST_RATES[newTerm][0]);
                         }} 
                         defaultValue={field.value?.toString()}
                       >
@@ -298,28 +310,6 @@ export function IncomeProviderForm({ client }: { client: Client }) {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="incomeAllocation"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center gap-4 space-y-0">
-                      <FormLabel className="w-48 shrink-0 uppercase text-xs font-bold">Income Allocation:</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-yellow-200 border-0 h-8 rounded-none font-bold">
-                            <SelectValue placeholder="Select frequency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="MONTHLY">MONTHLY</SelectItem>
-                          <SelectItem value="QUARTERLY">QUARTERLY</SelectItem>
-                          <SelectItem value="ANNUALLY">ANNUALLY</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-
                 <div className="pt-8 space-y-2">
                   <div className="flex items-start gap-4">
                     <span className="w-32 uppercase text-xs font-bold pt-1">Prepared By:</span>
@@ -343,9 +333,20 @@ export function IncomeProviderForm({ client }: { client: Client }) {
               </div>
             </div>
 
+            <div className="space-y-6 pt-6 border-t">
+              <h3 className="text-lg font-bold uppercase tracking-tight">Income Projections</h3>
+              <IncomeProjectionsTable 
+                initialCapital={Number(investmentAmount) || 0} 
+                investmentBooster={Number(investmentBooster) || 0}
+                years={term}
+                setYears={(y) => form.setValue("term", y)}
+                isAdmin={isAdmin}
+              />
+            </div>
+
             <div className="flex justify-end pt-6 border-t">
               <Button type="submit" size="lg" disabled={mutation.isPending} className="px-12 uppercase font-bold tracking-wider">
-                Generate Income Provider Quotation
+                Generate Quotation
               </Button>
             </div>
           </form>
