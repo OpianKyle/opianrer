@@ -565,6 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Load logo images
       let opianLogo: any = null;
       let flexMaxLogo: any = null;
+      let logoImage: any = null;
       try {
         const opianLogoPath = path.join(process.cwd(), "client/public/opian-logo.png");
         const flexMaxLogoPath = path.join(process.cwd(), "client/public/flexmax-logo.png");
@@ -574,6 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         opianLogo = await doc.embedPng(opianLogoBytes);
         flexMaxLogo = await doc.embedPng(flexMaxLogoBytes);
+        logoImage = opianLogo;
       } catch (error) {
         console.warn("Could not load logo images for download route:", error);
       }
@@ -1084,7 +1086,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Management Fees`, { x: margin, y, size: 10, font });
       page.drawText(`First 3 years`, { x: margin + 200, y, size: 10, font });
       page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
-      y -= lineHeight * 3;
+      y -= lineHeight * 2;
+
+      // CLIENT SIGN Section - Validity, Taxation, Fees, Suitability, Financial Advice, Benefits on Death
+      const clientSignContent = [
+        { title: "Validity:", text: "This offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company." },
+        { title: "Taxation:", text: "Taxation is not addressed in this plan. Taxation should be discussed with a tax adviser." },
+        { title: "Fees:", text: "This offer details the fees payable under the contract, which encompass deal placement fees. (commissions)" },
+        { title: "Suitability:", text: "The client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and and facilitate the successful execution of this agreement." },
+        { title: "Financial Advice:", text: "Limited financial advice has been given with this offer." },
+        { title: "Benefits payable on death:", text: "In the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement." }
+      ];
+
+      page.drawText("CLIENT SIGN", { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
+
+      clientSignContent.forEach(section => {
+        if (y < 80) {
+          page = doc.addPage();
+          y = page.getSize().height - 50;
+        }
+        page.drawText(section.title, { x: margin, y, size: 10, font: boldFont });
+        y -= 12;
+        
+        const words = section.text.split(' ');
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+            page.drawText(currentLine, { x: margin, y, size: 9, font });
+            y -= 11;
+            currentLine = word;
+            if (y < 50) {
+              page = doc.addPage();
+              y = page.getSize().height - 50;
+            }
+          } else {
+            currentLine = testLine;
+          }
+        });
+        page.drawText(currentLine, { x: margin, y, size: 9, font });
+        y -= 15;
+      });
+
+      y -= lineHeight;
 
       // COMMISSION
       if (y < 100) {
@@ -1237,6 +1282,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       y -= lineHeight * 2;
 
+      // CLIENT SIGN Section
+      const clientSignSections = [
+        {
+          title: "CLIENT SIGN",
+          text: "Validity:\nThis offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company.\n\nTaxation:\nTaxation is not addressed in this plan. Taxation should be discussed with a tax adviser.\n\nFees:\nThis offer details the fees payable under the contract, which encompass deal placement fees. (commissions)\n\nSuitability:\nThe client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and facilitate the successful execution of this agreement.\n\nFinancial Advice:\nLimited financial advice has been given with this offer.\n\nBenefits payable on death:\nIn the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement."
+        }
+      ];
+
+      clientSignSections.forEach(section => {
+        if (y < 100) {
+          page = doc.addPage();
+          y = page.getSize().height - 50;
+        }
+        page.drawText(section.title, { x: margin, y, size: 11, font: boldFont });
+        y -= lineHeight * 1.5;
+
+        const lines = section.text.split('\n');
+        lines.forEach(line => {
+          if (!line.trim()) {
+            y -= lineHeight * 0.5;
+            return;
+          }
+          const words = line.split(' ');
+          let currentLine = '';
+          words.forEach(word => {
+            const testLine = currentLine ? `${currentLine} ${word}` : word;
+            if (font.widthOfTextAtSize(testLine, 9) > width - (margin * 2)) {
+              if (y < 70) {
+                page = doc.addPage();
+                y = page.getSize().height - 50;
+              }
+              page.drawText(currentLine, { x: margin, y, size: 9, font });
+              y -= 11;
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          });
+          if (y < 70) {
+            page = doc.addPage();
+            y = page.getSize().height - 50;
+          }
+          page.drawText(currentLine, { x: margin, y, size: 9, font });
+          y -= 11;
+        });
+        y -= lineHeight;
+      });
+
       page.drawText(`Signature of investor: _________________________________`, { x: margin, y, size: 10, font });
       y -= lineHeight * 3;
 
@@ -1375,6 +1468,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!quotation) {
         return res.status(404).json({ error: "Quotation not found" });
+      }
+
+      const client = await storage.getClient(quotation.clientId!);
+      if (!client) {
+        return res.status(404).json({ error: "Client not found" });
       }
 
       // === PDF Setup ===
@@ -1524,13 +1622,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       
       // Add logo on the left side - larger for cover
-      if (logoImage) {
+      if (opianLogo) {
         const logoWidth = 200;
         const logoHeight = 58;
         const logoX = 60;
         const logoY = 650;
         
-        coverPage.drawImage(logoImage, {
+        coverPage.drawImage(opianLogo, {
           x: logoX,
           y: logoY,
           width: logoWidth,
@@ -1759,9 +1857,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       yPos = drawJustifiedText(page3, suitabilityText, leftMargin, yPos, contentWidth, font, 10, 15);
       yPos -= 40;
 
-      // Fees and Commission Tables
-      page3.drawText("Placement and Admin fees", { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 20;
+      // PLACEMENT AND ADMIN FEES
+      if (yPos < 120) {
+        page3 = pdfDoc.addPage([595.28, 841.89]);
+        addFooter(page3);
+        addLogos(page3);
+        yPos = 750;
+      }
+      page3.drawText(`PLACEMENT AND ADMIN FEES`, { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      yPos -= 15 * 1.5;
       
       const feeTable = [
         ["Placement fee", "Once Off", "1.00% once off"],
@@ -1775,6 +1879,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page3.drawText(pct, { x: leftMargin + 350, y: yPos, size: 10, font });
         yPos -= 20;
       });
+
+      yPos -= 30;
+
+      // CLIENT SIGN Section - Validity, Taxation, Fees, Suitability, Financial Advice, Benefits on Death
+      const clientSignContentPost = [
+        { title: "Validity:", text: "This offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company." },
+        { title: "Taxation:", text: "Taxation is not addressed in this plan. Taxation should be discussed with a tax adviser." },
+        { title: "Fees:", text: "This offer details the fees payable under the contract, which encompass deal placement fees. (commissions)" },
+        { title: "Suitability:", text: "The client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and and facilitate the successful execution of this agreement." },
+        { title: "Financial Advice:", text: "Limited financial advice has been given with this offer." },
+        { title: "Benefits payable on death:", text: "In the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement." }
+      ];
+
+      page3.drawText("CLIENT SIGN", { x: leftMargin, y: yPos, size: 11, font: boldFont });
+      yPos -= 15 * 1.5;
+
+      clientSignContentPost.forEach(section => {
+        if (yPos < 100) {
+          page3 = pdfDoc.addPage([595.28, 841.89]);
+          addFooter(page3);
+          addLogos(page3);
+          yPos = 750;
+        }
+        page3.drawText(section.title, { x: leftMargin, y: yPos, size: 10, font: boldFont });
+        yPos -= 12;
+        
+        yPos = drawJustifiedText(page3, section.text, leftMargin, yPos, contentWidth, font, 9, 13);
+        yPos -= 10;
+      });
+
+      yPos -= 20;
 
       yPos -= 30;
       page3.drawText("Commission", { x: leftMargin, y: yPos, size: 11, font: boldFont });
