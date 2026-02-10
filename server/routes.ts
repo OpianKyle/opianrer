@@ -605,8 +605,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       y -= 60; // Adjust starting y after logos
 
+      const isIncomeProvider = quotation.type === "income_provider";
+
       // Title
-      page.drawText(`Quotation for FlexMax Capital Appreciator Fixed Deposit Note ${quotation.term} Year Term`, {
+      page.drawText(`Quotation for FlexMax ${isIncomeProvider ? "Income Provider" : "Capital Appreciator"} Fixed Deposit Note ${quotation.term} Year Term`, {
         x: margin,
         y,
         size: 14,
@@ -646,21 +648,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 1.5;
 
       const boostedAmount = quotation.investmentAmount * (1 + (quotation.investmentBooster || 0) / 100);
-      const firstYearRate = quotation.term === 1 ? quotation.interestRate : (quotation.term === 3 ? "11.75%" : "13.10%");
+      const firstYearRate = isIncomeProvider 
+        ? (quotation.term === 3 ? "10.25%" : "11.50%")
+        : (quotation.term === 1 ? quotation.interestRate : (quotation.term === 3 ? "11.75%" : "13.10%"));
 
       const summaryItems = [
         ['Investment amount', `R ${quotation.investmentAmount.toLocaleString()}`],
-        ['Investment Booster', `${quotation.investmentBooster || 0}%`],
-        ['Amount allocated with enhancement', `R ${boostedAmount.toLocaleString()}`],
+        [isIncomeProvider ? 'Amount allocated to Income payments with enhancement' : 'Amount allocated with enhancement', `R ${boostedAmount.toLocaleString()}`],
         ['Term in years', `${quotation.term}`],
         ['Commencement date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
         ['Percentage returned first year', firstYearRate],
-        ['Income allocated to capital in first year', `R ${(boostedAmount * (parseFloat(firstYearRate) / 100)).toLocaleString()}`],
+        [isIncomeProvider ? 'Income Payment annual amount received in first year' : 'Income allocated to capital in first year', `R ${(boostedAmount * (parseFloat(firstYearRate) / 100)).toLocaleString()}`],
         ['Liquidity', 'None'],
         ['', ''],
         ['Contract Start date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
         ['Exit date', `${format(new Date(quotation.redemptionDate), 'dd-MMM-yy')}`],
-        ['Return Cycle', 'Annually'],
+        [isIncomeProvider ? 'Income allocation cycle' : 'Return Cycle', isIncomeProvider ? quotation.incomeAllocation : 'Annually'],
         ['Capital allocation', '100%'],
       ];
 
@@ -688,8 +691,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 2;
 
       // Draw Table Headers
-      const colWidths = [50, 120, 100, 120, 100];
-      const headers = ['Year', 'Capital Value', 'Div Forecast', 'Projected Div', 'Annualised'];
+      const colWidths = isIncomeProvider ? [50, 150, 100, 150] : [50, 120, 100, 120, 100];
+      const headers = isIncomeProvider 
+        ? ['Year', 'Capital Value', 'Income Taken', 'Annual']
+        : ['Year', 'Capital Value', 'Div Forecast', 'Projected Div', 'Annualised'];
       let xPos = margin;
       
       // Draw header row background
@@ -711,13 +716,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Current row
       xPos = margin;
-      const currentValues = [
-        'Current', 
-        `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 
-        `${quotation.interestRate}%`, 
-        '-', 
-        `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-      ];
+      const currentValues = isIncomeProvider
+        ? ['Current', `R ${boostedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, '-', '-']
+        : [
+          'Current', 
+          `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 
+          `${quotation.interestRate}%`, 
+          '-', 
+          `R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        ];
       
       currentValues.forEach((val, i) => {
         page.drawRectangle({
@@ -734,29 +741,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight + 5;
 
       // Projections for each year up to the term
-      const yearlyDivAllocation = quotation.term === 1 ? Number(quotation.interestRate) : (quotation.term === 3 ? 11.75 : 13.10);
-      const boostedAmountLoop = quotation.investmentAmount * (1 + (quotation.investmentBooster || 0) / 100);
-      let currentVal = boostedAmountLoop;
+      let currentVal = boostedAmount;
+      let totalIncome = 0;
 
       for (let i = 1; i <= Math.min(5, quotation.term); i++) {
-        let rate = yearlyDivAllocation;
-        if (quotation.term === 3) {
-          rate = [11.75, 11.85, 11.95][i-1] || 11.95;
-        } else if (quotation.term === 5) {
-          rate = [13.10, 13.20, 13.30, 13.40, 13.50][i-1] || 13.50;
+        let rate = 0;
+        if (isIncomeProvider) {
+          if (quotation.term === 3) {
+            rate = [10.25, 10.35, 10.45][i-1] || 10.45;
+          } else {
+            rate = [11.50, 11.60, 11.70, 11.80, 11.90][i-1] || 11.90;
+          }
+        } else {
+          if (quotation.term === 1) {
+            rate = Number(quotation.interestRate);
+          } else if (quotation.term === 3) {
+            rate = [11.75, 11.85, 11.95][i-1] || 11.95;
+          } else {
+            rate = [13.10, 13.20, 13.30, 13.40, 13.50][i-1] || 13.50;
+          }
         }
         
         const divAmount = currentVal * (rate / 100);
-        const annualised = currentVal + divAmount;
+        const annualised = isIncomeProvider ? currentVal : currentVal + divAmount;
+        totalIncome += divAmount;
         
         xPos = margin;
-        const rowValues = [
-          `${i}`,
-          `R ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-          `${rate.toFixed(2)}%`,
-          `R ${divAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-          `R ${annualised.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-        ];
+        const rowValues = isIncomeProvider
+          ? [
+              `${i}`,
+              `R ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+              `${rate.toFixed(2)}%`,
+              `R ${divAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+            ]
+          : [
+              `${i}`,
+              `R ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+              `${rate.toFixed(2)}%`,
+              `R ${divAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+              `R ${annualised.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+            ];
 
         rowValues.forEach((val, j) => {
           page.drawRectangle({
@@ -767,12 +791,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             borderColor: rgb(0, 0, 0),
             borderWidth: 1,
           });
-          page.drawText(val, { x: xPos + 5, y, size: 9, font: j === 4 ? boldFont : font });
+          page.drawText(val, { x: xPos + 5, y, size: 9, font: (!isIncomeProvider && j === 4) ? boldFont : font });
           xPos += colWidths[j];
         });
         
         currentVal = annualised;
         y -= lineHeight + 5;
+      }
+
+      if (isIncomeProvider) {
+        y -= 10;
+        page.drawText(`Growth Return Over Time: R ${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, { x: margin + 200, y, size: 9, font: boldFont });
+        y -= 15;
+        page.drawText(`Capital Returned: R ${quotation.investmentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, { x: margin + 200, y, size: 9, font: boldFont });
       }
       y -= lineHeight * 2;
 
@@ -1008,6 +1039,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         investmentAmount: Math.round(Number(result.data.investmentAmount) || 0),
         investmentBooster: Math.round(Number(result.data.investmentBooster) || 0),
         yearlyDivAllocation: Math.round(Number(result.data.yearlyDivAllocation) || 975),
+        type: result.data.type || "capital_appreciator",
+        incomeAllocation: result.data.incomeAllocation || null,
       };
       const quotation = await storage.createCdnQuotation(quotationData as any);
       res.status(201).json(quotation);

@@ -314,6 +314,8 @@ export const cdnQuotations = pgTable("cdn_quotations", {
   status: text("status").notNull().default("draft"),
   createdAt: timestamp("created_at").defaultNow(),
   userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull().default("capital_appreciator"), // capital_appreciator, income_provider
+  incomeAllocation: text("income_allocation"), // MONTHLY, ANNUALLY, etc.
 });
 
 export const interestRates = pgTable("interest_rates", {
@@ -345,6 +347,8 @@ export const insertCdnQuotationSchema = createInsertSchema(cdnQuotations).omit({
   commencementDate: z.coerce.date().optional(),
   redemptionDate: z.coerce.date().optional(),
   term: z.coerce.number().min(1, "Term is required"),
+  type: z.string().optional().default("capital_appreciator"),
+  incomeAllocation: z.string().optional(),
 });
 
 export type InsertCdnQuotation = z.infer<typeof insertCdnQuotationSchema>;

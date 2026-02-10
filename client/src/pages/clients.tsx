@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { QuotationForm } from "@/components/quotation-form";
+import { IncomeProviderForm } from "@/components/income-provider-form";
 import ComprehensiveClientModal from "@/components/modals/comprehensive-client-modal";
 import CreateAppointmentModal from "@/components/modals/create-appointment-modal";
 import EditClientModal from "@/components/modals/edit-client-modal";
@@ -61,6 +62,7 @@ export default function Clients() {
   const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
   const [selectedClientForQuotation, setSelectedClientForQuotation] = useState<Client | null>(null);
   const [showQuotationForm, setShowQuotationForm] = useState(false);
+  const [showIncomeProviderForm, setShowIncomeProviderForm] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, themes } = useTheme();
@@ -388,13 +390,24 @@ export default function Clients() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            title="CDN Quotation"
+                            title="Capital Appreciator Quotation"
                             onClick={() => {
                               setSelectedClientForQuotation(client);
                               setShowQuotationForm(true);
                             }}
                           >
                             <FileText className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="Income Provider Quotation"
+                            onClick={() => {
+                              setSelectedClientForQuotation(client);
+                              setShowIncomeProviderForm(true);
+                            }}
+                          >
+                            <FileText className="w-4 h-4 text-green-500" />
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -456,6 +469,16 @@ export default function Clients() {
           <div className="max-h-[90vh] overflow-y-auto p-6 bg-white">
             {selectedClientForQuotation && (
               <QuotationForm client={selectedClientForQuotation} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showIncomeProviderForm} onOpenChange={setShowIncomeProviderForm}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-0">
+          <div className="max-h-[90vh] overflow-y-auto p-6 bg-white">
+            {selectedClientForQuotation && (
+              <IncomeProviderForm client={selectedClientForQuotation} />
             )}
           </div>
         </DialogContent>
