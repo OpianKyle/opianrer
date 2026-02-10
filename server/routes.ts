@@ -1103,6 +1103,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       y -= lineHeight * 2;
 
       // NEW SECTIONS
+      const commissionInfo = "CLIENT SIGN\n\nValidity:\nThis offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company.\n\nTaxation:\nTaxation is not addressed in this plan. Taxation should be discussed with a tax adviser.\n\nFees:\nThis offer details the fees payable under the contract, which encompass deal placement fees. (commissions)\n\nSuitability:\nThe client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and facilitate the successful execution of this agreement.\n\nFinancial Advice:\nLimited financial advice has been given with this offer.\n\nBenefits payable on death:\nIn the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement.";
+
+      const commLines = commissionInfo.split('\n');
+      commLines.forEach(line => {
+        if (!line.trim()) {
+          y -= lineHeight * 0.5;
+          return;
+        }
+        const isHeader = line === "CLIENT SIGN" || line.endsWith(':');
+        const fontSize = isHeader ? 10 : 9;
+        const currentFont = isHeader ? boldFont : font;
+
+        const words = line.split(' ');
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (currentFont.widthOfTextAtSize(testLine, fontSize) > pageWidth - (margin * 2)) {
+            if (y < 70) {
+              page = doc.addPage();
+              y = page.getSize().height - 50;
+            }
+            page.drawText(currentLine, { x: margin, y, size: fontSize, font: currentFont });
+            y -= fontSize + 2;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (y < 70) {
+          page = doc.addPage();
+          y = page.getSize().height - 50;
+        }
+        page.drawText(currentLine, { x: margin, y, size: fontSize, font: currentFont });
+        y -= fontSize + 2;
+      });
+      y -= lineHeight;
+
+      // NEW SECTIONS
       const sections = [
         {
           title: "CLIENT SIGN",
