@@ -560,6 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { width, height } = page.getSize();
       const font = await doc.embedFont(StandardFonts.Helvetica);
       const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+      const italicFont = await doc.embedFont(StandardFonts.HelveticaOblique);
 
       // Load logo images
       let opianLogo: any = null;
@@ -979,9 +980,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`100%`, { x: margin + 450, y, size: 9, font });
       y -= lineHeight * 2;
 
-      page.drawText(`* Please note that fund choices will be modeled and should the dividends below these returns,`, { x: margin, y, size: 8, font: StandardFonts.HelveticaOblique as any });
+      page.drawText(`* Please note that fund choices will be modeled and should the dividends below these returns,`, { x: margin, y, size: 8, font: italicFont });
       y -= 10;
-      page.drawText(`the modeled returns will be payable to the client.`, { x: margin + 8, y, size: 8, font: StandardFonts.HelveticaOblique as any });
+      page.drawText(`the modeled returns will be payable to the client.`, { x: margin + 8, y, size: 8, font: italicFont });
       y -= lineHeight * 2;
 
       // CONDITIONS Section
