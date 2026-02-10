@@ -652,23 +652,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? (quotation.term === 3 ? "10.25%" : "11.50%")
         : (quotation.term === 1 ? quotation.interestRate : (quotation.term === 3 ? "11.75%" : "13.10%"));
 
-      const summaryItems = [
+      const summaryItems: [string, string][] = [
         ['Investment amount', `R ${quotation.investmentAmount.toLocaleString()}`],
         [isIncomeProvider ? 'Amount allocated to Income payments with enhancement' : 'Amount allocated with enhancement', `R ${boostedAmount.toLocaleString()}`],
         ['Term in years', `${quotation.term}`],
         ['Commencement date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
-        ['Percentage returned first year', firstYearRate],
-        [isIncomeProvider ? 'Income Payment annual amount received in first year' : 'Income allocated to capital in first year', `R ${(boostedAmount * (parseFloat(firstYearRate) / 100)).toLocaleString()}`],
+        ['Percentage returned first year', firstYearRate || "0%"],
+        [isIncomeProvider ? 'Income Payment annual amount received in first year' : 'Income allocated to capital in first year', `R ${(boostedAmount * (parseFloat(firstYearRate || "0") / 100)).toLocaleString()}`],
         ['Liquidity', 'None'],
         ['', ''],
         ['Contract Start date', `${format(new Date(quotation.commencementDate), 'dd-MMM-yy')}`],
         ['Exit date', `${format(new Date(quotation.redemptionDate), 'dd-MMM-yy')}`],
-        [isIncomeProvider ? 'Income allocation cycle' : 'Return Cycle', isIncomeProvider ? quotation.incomeAllocation : 'Annually'],
+        [isIncomeProvider ? 'Income allocation cycle' : 'Return Cycle', isIncomeProvider ? (quotation.incomeAllocation || "MONTHLY") : 'Annually'],
         ['Capital allocation', '100%'],
       ];
 
       summaryItems.forEach(([label, value]) => {
-        if (label) {
+        if (label && value) {
           page.drawText(label, { x: margin, y, size: 10, font });
           page.drawText(value, { x: margin + 250, y, size: 10, font });
         }
@@ -767,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalIncome += divAmount;
         
         xPos = margin;
-        const rowValues = isIncomeProvider
+        const rowValues: string[] = isIncomeProvider
           ? [
               `${i}`,
               `R ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
@@ -783,15 +783,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ];
 
         rowValues.forEach((val, j) => {
-          page.drawRectangle({
-            x: xPos,
-            y: y - 5,
-            width: colWidths[j],
-            height: lineHeight + 5,
-            borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
-          });
-          page.drawText(val, { x: xPos + 5, y, size: 9, font: (!isIncomeProvider && j === 4) ? boldFont : font });
+          if (val) {
+            page.drawRectangle({
+              x: xPos,
+              y: y - 5,
+              width: colWidths[j],
+              height: lineHeight + 5,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+            });
+            page.drawText(val, { x: xPos + 5, y, size: 9, font: (!isIncomeProvider && j === 4) ? boldFont : font });
+          }
           xPos += colWidths[j];
         });
         
@@ -1026,6 +1028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = insertCdnQuotationSchema.safeParse(req.body);
       if (!result.success) {
+        console.error("Validation failed:", result.error.issues);
         return res.status(400).json({ message: "Invalid quotation data", errors: result.error.issues });
       }
       const quotationData = { 
@@ -1034,17 +1037,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         calculationDate: result.data.calculationDate ? new Date(result.data.calculationDate) : undefined,
         commencementDate: result.data.commencementDate ? new Date(result.data.commencementDate) : undefined,
         redemptionDate: result.data.redemptionDate ? new Date(result.data.redemptionDate) : undefined,
-        interestRate: result.data.interestRate.toString(), // Ensure it's a string
-        maturityValue: Math.round(Number(result.data.maturityValue) || 0), // Ensure it's an integer for the DB
+        interestRate: result.data.interestRate?.toString() || "0", 
+        maturityValue: Math.round(Number(result.data.maturityValue) || 0), 
         investmentAmount: Math.round(Number(result.data.investmentAmount) || 0),
         investmentBooster: Math.round(Number(result.data.investmentBooster) || 0),
-        yearlyDivAllocation: Math.round(Number(result.data.yearlyDivAllocation) || 975),
+        yearlyDivAllocation: Math.round((Number(result.data.yearlyDivAllocation) || 9.75) * 100), // Store as integer basis points
         type: result.data.type || "capital_appreciator",
         incomeAllocation: result.data.incomeAllocation || null,
       };
       const quotation = await storage.createCdnQuotation(quotationData as any);
       res.status(201).json(quotation);
     } catch (error) {
+      console.error("Quotation creation error:", error);
       res.status(500).json({ message: "Failed to create quotation" });
     }
   });

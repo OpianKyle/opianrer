@@ -53,6 +53,8 @@ export function QuotationForm({ client }: { client: Client }) {
       preparedByOffice: "0861 263 346",
       preparedByEmail: user?.email || "",
       investmentBooster: 0,
+      maturityValue: 82312,
+      type: "capital_appreciator",
     },
   });
 

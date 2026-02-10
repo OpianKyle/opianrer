@@ -55,6 +55,7 @@ export function IncomeProviderForm({ client }: { client: Client }) {
       investmentBooster: 5,
       type: "income_provider",
       incomeAllocation: "MONTHLY",
+      maturityValue: 100000,
     },
   });
 
