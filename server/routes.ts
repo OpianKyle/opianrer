@@ -616,14 +616,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       y -= lineHeight * 3;
 
-      // Header Info
-      page.drawText(`Date of Offer:`, { x: margin, y, size: 10, font });
-      page.drawText(`${format(new Date(quotation.calculationDate), 'yyyy/MM/dd')}`, { x: margin + 150, y, size: 10, font });
-      y -= lineHeight * 2;
+      if (isIncomeProvider) {
+        // Income Provider Specific Format
+        page.drawText(`Date of Offer:`, { x: margin, y, size: 10, font });
+        page.drawText(`${format(new Date(quotation.calculationDate), 'yyyy/MM/dd')}`, { x: margin + 150, y, size: 10, font });
+        y -= lineHeight * 2;
 
-      page.drawText(`Offered to:`, { x: margin, y, size: 10, font });
-      page.drawText(`${quotation.clientName}`, { x: margin + 150, y, size: 10, font });
-      y -= lineHeight;
+        page.drawText(`Offered to:`, { x: margin, y, size: 10, font });
+        page.drawText(`${quotation.clientName}`, { x: margin + 150, y, size: 10, font });
+        y -= lineHeight;
+
+        page.drawText(`Address:`, { x: margin, y, size: 10, font });
+        const addressLines = quotation.clientAddress.split('\n');
+        addressLines.forEach((line, i) => {
+          page.drawText(line, { x: margin + 150, y - (i * lineHeight), size: 10, font });
+        });
+        y -= addressLines.length * lineHeight + lineHeight;
+
+        page.drawText(`Telephone:`, { x: margin, y, size: 10, font });
+        page.drawText(`${quotation.clientPhone || ''}`, { x: margin + 150, y, size: 10, font });
+        y -= lineHeight * 2;
+
+        page.drawText(`Dear ${quotation.clientName}`, { x: margin, y, size: 10, font });
+        y -= lineHeight * 2;
+
+        page.drawText(`We take pleasure in submitting the following proposal to you:`, { x: margin, y, size: 10, font });
+        y -= lineHeight * 2;
+
+        page.drawText(`Investment summary`, { x: margin, y, size: 11, font: boldFont });
+        y -= lineHeight * 1.5;
+
+        const summaryItems = [
+          [`Investment amount`, `R${(quotation.investmentAmount).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`],
+          [`Amount allocated to Income payments with enhancement`, `R${(quotation.investmentAmount * (1 + (quotation.investmentBooster || 0) / 100)).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`],
+          [`Term in years`, `${quotation.term}`],
+          [`Commencement date`, `${format(new Date(quotation.commencementDate), 'd-MMM-yy')}`],
+          [`Percentage returned first year`, `10.25%`],
+          [`Income Payment annual amount received in first year`, `R${(quotation.investmentAmount * 0.107625).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`],
+          [`Liquidity`, `None`],
+        ];
+
+        summaryItems.forEach(([label, value]) => {
+          page.drawText(label, { x: margin, y, size: 10, font });
+          page.drawText(value, { x: margin + 350, y, size: 10, font: boldFont });
+          y -= lineHeight;
+        });
+
+        y -= lineHeight;
+        const detailsItems = [
+          [`Contract Start date`, `${format(new Date(quotation.commencementDate), 'd-MMM-yy')}`],
+          [`Exit date`, `${format(new Date(quotation.redemptionDate), 'd-MMM-yy')}`],
+          [`Income allocation cycle`, `${quotation.incomeAllocation || 'Annually'}`],
+          [`Capital allocation`, `100%`],
+        ];
+
+        detailsItems.forEach(([label, value]) => {
+          page.drawText(label, { x: margin, y, size: 10, font });
+          page.drawText(value, { x: margin + 350, y, size: 10, font: boldFont });
+          y -= lineHeight;
+        });
+
+        y -= lineHeight * 2;
+        page.drawText(`Income projections`, { x: margin, y, size: 11, font: boldFont });
+        y -= lineHeight * 1.5;
+
+        // Table Header
+        page.drawText(`Year`, { x: margin, y, size: 10, font: boldFont });
+        page.drawText(`Capital Value`, { x: margin + 50, y, size: 10, font: boldFont });
+        page.drawText(`Income Taken`, { x: margin + 250, y, size: 10, font: boldFont });
+        y -= lineHeight;
+
+        const boosterMult = 1 + (quotation.investmentBooster || 0) / 100;
+        const projections = [
+          { year: 1, capital: quotation.investmentAmount * boosterMult, rate: "10.25%" },
+          { year: 2, capital: quotation.investmentAmount * boosterMult, rate: "10.35%" },
+          { year: 3, capital: quotation.investmentAmount, rate: "10.45%" },
+        ];
+
+        projections.forEach((p) => {
+          if (p.year <= quotation.term) {
+            page.drawText(`${p.year}`, { x: margin, y, size: 10, font });
+            page.drawText(`R${p.capital.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, { x: margin + 50, y, size: 10, font });
+            page.drawText(`${p.rate}`, { x: margin + 250, y, size: 10, font });
+            y -= lineHeight;
+          }
+        });
+
+      } else {
+        // Capital Appreciator Format (Keep existing or update if needed)
+        page.drawText(`Date of Offer:`, { x: margin, y, size: 10, font });
+        page.drawText(`${format(new Date(quotation.calculationDate), 'yyyy/MM/dd')}`, { x: margin + 150, y, size: 10, font });
+        y -= lineHeight * 2;
+        // ... rest of existing format for capital appreciator
+      }
       page.drawText(`Address:`, { x: margin, y, size: 10, font });
       const addressLines = quotation.clientAddress.split('\n');
       addressLines.forEach((line, i) => {

@@ -24,10 +24,10 @@ const INTEREST_RATES: Record<number, string[]> = {
 export { IncomeProviderForm };
 
 function IncomeProviderForm({ client }: { client: Client }) {
-  return <QuotationForm client={client} />;
+  return <QuotationForm client={client} type="income_provider" />;
 }
 
-export function QuotationForm({ client }: { client: Client }) {
+export function QuotationForm({ client, type = "capital_appreciator" }: { client: Client, type?: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: user } = useQuery<User>({ queryKey: ["/api/user"] });
@@ -47,20 +47,21 @@ export function QuotationForm({ client }: { client: Client }) {
       clientName: `${client.firstName} ${client.surname}`,
       clientAddress: `${client.physicalAddress || ""}\n${client.physicalPostalCode || ""}`,
       clientPhone: client.cellPhone || "",
-      investmentAmount: 75000,
-      term: 1,
-      interestRate: "9.75",
+      investmentAmount: 100000,
+      term: 3,
+      interestRate: "11.75%, 11.85%, 11.95%",
       yearlyDivAllocation: 9.75,
       calculationDate: new Date(),
       commencementDate: new Date(),
-      redemptionDate: addYears(new Date(), 1),
+      redemptionDate: addYears(new Date(), 3),
       preparedByName: user ? `${user.firstName} ${user.lastName}` : "",
       preparedByCell: "",
       preparedByOffice: "0861 263 346",
       preparedByEmail: user?.email || "",
-      investmentBooster: 0,
-      maturityValue: 82312,
-      type: "capital_appreciator",
+      investmentBooster: 5,
+      maturityValue: 0,
+      type: type,
+      incomeAllocation: type === "income_provider" ? "MONTHLY" : undefined,
     },
   });
 
@@ -146,7 +147,7 @@ export function QuotationForm({ client }: { client: Client }) {
       </div>
       <CardHeader className="text-center border-b mb-6 pt-0">
         <CardTitle className="text-xl font-bold uppercase tracking-tight">
-          Quotation Tool for FlexMax Capital Appreciator Fixed Deposit Note {term} Year Term
+          Quotation Tool for FlexMax {type === "income_provider" ? "Income Provider" : "Capital Appreciator"} Fixed Deposit Note {term} Year Term
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -228,6 +229,30 @@ export function QuotationForm({ client }: { client: Client }) {
                     </FormItem>
                   )}
                 />
+
+                {type === "income_provider" && (
+                  <FormField
+                    control={form.control}
+                    name="incomeAllocation"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-4 space-y-0">
+                        <FormLabel className="w-32 shrink-0 uppercase text-xs font-bold">Income Allocation:</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-yellow-200 border-0 h-8 rounded-none">
+                              <SelectValue placeholder="Select allocation" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="MONTHLY">MONTHLY</SelectItem>
+                            <SelectItem value="ANNUALLY">ANNUALLY</SelectItem>
+                            <SelectItem value="QUARTERLY">QUARTERLY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="space-y-4">
