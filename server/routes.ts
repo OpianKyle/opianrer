@@ -629,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page.drawText(`Address:`, { x: margin, y, size: 10, font });
         const addressLines = quotation.clientAddress.split('\n');
         addressLines.forEach((line, i) => {
-          page.drawText(line, { x: margin + 150, y - (i * lineHeight), size: 10, font });
+          page.drawText(line, { x: margin + 150, y: y - (i * lineHeight), size: 10, font });
         });
         y -= addressLines.length * lineHeight + lineHeight;
 
@@ -678,29 +678,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         y -= lineHeight * 2;
         page.drawText(`Income projections`, { x: margin, y, size: 11, font: boldFont });
-        y -= lineHeight * 1.5;
+        y -= lineHeight * 0.5;
 
-        // Table Header
-        page.drawText(`Year`, { x: margin, y, size: 10, font: boldFont });
-        page.drawText(`Capital Value`, { x: margin + 50, y, size: 10, font: boldFont });
-        page.drawText(`Income Taken`, { x: margin + 250, y, size: 10, font: boldFont });
-        y -= lineHeight;
+        // Draw Table exactly like image
+        const tableWidth = width - (2 * margin);
+        const colWidths = [
+          tableWidth * 0.08,  // Year
+          tableWidth * 0.32,  // Capital Value
+          tableWidth * 0.28,  // Middle Gray/Empty
+          tableWidth * 0.18,  // Income Taken Annual
+          tableWidth * 0.14   // Income Taken Monthly
+        ];
+        const rowHeight = 22;
+        
+        const drawCell = (x: number, y: number, w: number, h: number, text: string, align: 'left' | 'center' | 'right' = 'left', bold = false, fill?: boolean) => {
+          if (fill) {
+            page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.9, 0.9, 0.9), borderColor: rgb(0, 0, 0), borderWidth: 1 });
+          } else {
+            page.drawRectangle({ x, y, width: w, height: h, borderColor: rgb(0, 0, 0), borderWidth: 1 });
+          }
+          if (text) {
+            const textFont = bold ? boldFont : font;
+            const textWidth = textFont.widthOfTextAtSize(text, 9);
+            let textX = x + 5;
+            if (align === 'center') textX = x + (w - textWidth) / 2;
+            if (align === 'right') textX = x + w - textWidth - 5;
+            page.drawText(text, {
+              x: textX,
+              y: y + (h - 9) / 2,
+              size: 9,
+              font: textFont
+            });
+          }
+        };
 
+        // Header Structure
+        let currentY = y;
+        
+        // Top row
+        drawCell(margin, currentY - rowHeight, colWidths[0], rowHeight, "", 'center', true); // Year placeholder
+        drawCell(margin + colWidths[0], currentY - rowHeight, colWidths[1] + colWidths[2], rowHeight, "Projection Scenarios", 'center', true);
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2], currentY - rowHeight, colWidths[3] + colWidths[4], rowHeight, "", 'center');
+        currentY -= rowHeight;
+
+        // Second row
+        drawCell(margin, currentY - rowHeight, colWidths[0], rowHeight, "Year", 'center', true); // Year label
+        drawCell(margin + colWidths[0], currentY - rowHeight, colWidths[1], rowHeight, "Capital Value", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1], currentY - rowHeight, colWidths[2], rowHeight, "", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2], currentY - rowHeight, colWidths[3] + colWidths[4], rowHeight, "Income Taken", 'center');
+        currentY -= rowHeight;
+
+        // Third row
+        drawCell(margin, currentY - rowHeight, colWidths[0], rowHeight, "", 'center');
+        drawCell(margin + colWidths[0], currentY - rowHeight, colWidths[1], rowHeight, "Current", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1], currentY - rowHeight, colWidths[2], rowHeight, "", 'center', false, true); // Gray box
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2], currentY - rowHeight, colWidths[3], rowHeight, "Annual", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], currentY - rowHeight, colWidths[4], rowHeight, "Monthly", 'center');
+        currentY -= rowHeight;
+
+        // Data Rows
         const boosterMult = 1 + (quotation.investmentBooster || 0) / 100;
         const projections = [
-          { year: 1, capital: quotation.investmentAmount * boosterMult, rate: "10.25%" },
-          { year: 2, capital: quotation.investmentAmount * boosterMult, rate: "10.35%" },
-          { year: 3, capital: quotation.investmentAmount, rate: "10.45%" },
+          { year: 1, capital: quotation.investmentAmount * boosterMult, rate: "10.25%", amount: (quotation.investmentAmount * boosterMult) * 0.1025 },
+          { year: 2, capital: quotation.investmentAmount * boosterMult, rate: "10.35%", amount: (quotation.investmentAmount * boosterMult) * 0.1035 },
+          { year: 3, capital: quotation.investmentAmount, rate: "10.45%", amount: quotation.investmentAmount * 0.1045 },
         ];
 
-        projections.forEach((p) => {
-          if (p.year <= quotation.term) {
-            page.drawText(`${p.year}`, { x: margin, y, size: 10, font });
-            page.drawText(`R${p.capital.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, { x: margin + 50, y, size: 10, font });
-            page.drawText(`${p.rate}`, { x: margin + 250, y, size: 10, font });
-            y -= lineHeight;
+        projections.forEach((row, i) => {
+          if (row.year <= quotation.term) {
+            drawCell(margin, currentY - rowHeight, colWidths[0], rowHeight, row.year.toString(), 'center');
+            drawCell(margin + colWidths[0], currentY - rowHeight, colWidths[1], rowHeight, `R${row.capital.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, 'center');
+            drawCell(margin + colWidths[0] + colWidths[1], currentY - rowHeight, colWidths[2], rowHeight, "", 'center', false, true); // Gray middle
+            
+            // Annual column split visually
+            const annualX = margin + colWidths[0] + colWidths[1] + colWidths[2];
+            drawCell(annualX, currentY - rowHeight, colWidths[3] * 0.4, rowHeight, row.rate, 'center');
+            drawCell(annualX + colWidths[3] * 0.4, currentY - rowHeight, colWidths[3] * 0.6, rowHeight, `R${row.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, 'right');
+            
+            drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], currentY - rowHeight, colWidths[4], rowHeight, "N/A", 'center');
+            currentY -= rowHeight;
           }
         });
+
+        // Footer Row
+        const totalGrowthAmt = projections.filter(p => p.year <= quotation.term).reduce((sum, p) => sum + p.amount, 0);
+        
+        drawCell(margin, currentY - rowHeight, colWidths[0] + colWidths[1], rowHeight, "", 'left', false, true); // Gray footer start
+        drawCell(margin + colWidths[0] + colWidths[1], currentY - rowHeight, colWidths[2] * 0.7, rowHeight, "Growth Return Over Time", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2] * 0.7, currentY - rowHeight, colWidths[2] * 0.3, rowHeight, `R${totalGrowthAmt.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, 'center', true);
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2], currentY - rowHeight, colWidths[3] + colWidths[4] * 0.5, rowHeight, "Capital Returned", 'center');
+        drawCell(margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] * 0.5, currentY - rowHeight, colWidths[4] * 0.5, rowHeight, `R${quotation.investmentAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`, 'center', true);
+        
+        y = currentY - rowHeight - 20;
 
       } else {
         // Capital Appreciator Format (Keep existing or update if needed)
