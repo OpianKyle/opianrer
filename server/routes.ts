@@ -973,11 +973,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Split`, { x: margin + 450, y, size: 10, font: boldFont });
       y -= lineHeight * 1.5;
 
-      page.drawText(`SIN Code: DG00U67BC567`, { x: margin, y, size: 9, font });
+      page.drawText(`ISIN Code GG00B3TBCS61`, { x: margin, y, size: 9, font });
       page.drawText(`WSF Global Equity Fund`, { x: margin + 150, y, size: 9, font });
-      page.drawText(`Risk Adverse`, { x: margin + 350, y, size: 9, font });
+      page.drawText(`Risk-Adverse`, { x: margin + 350, y, size: 9, font });
       page.drawText(`100%`, { x: margin + 450, y, size: 9, font });
-      y -= lineHeight * 3;
+      y -= lineHeight * 2;
+
+      page.drawText(`* Please note that fund choices will be modeled and should the dividends below these returns,`, { x: margin, y, size: 8, font: StandardFonts.HelveticaOblique as any });
+      y -= 10;
+      page.drawText(`the modeled returns will be payable to the client.`, { x: margin + 8, y, size: 8, font: StandardFonts.HelveticaOblique as any });
+      y -= lineHeight * 2;
 
       // CONDITIONS Section
       page.drawText(`CONDITIONS`, { x: margin, y, size: 11, font: boldFont });
@@ -1071,9 +1076,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Once Off`, { x: margin + 200, y, size: 10, font });
       page.drawText(`1.00%`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight;
-      page.drawText(`Admin Fees`, { x: margin, y, size: 10, font });
-      page.drawText(`Once Off`, { x: margin + 200, y, size: 10, font });
-      page.drawText(`0.50%`, { x: margin + 350, y, size: 10, font });
+      page.drawText(`Admin fees`, { x: margin, y, size: 10, font });
+      page.drawText(`First 3 years`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Management Fees`, { x: margin, y, size: 10, font });
+      page.drawText(`First 3 years`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight * 3;
 
       // COMMISSION
@@ -1088,8 +1097,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`Percentage`, { x: margin + 350, y, size: 10, font: boldFont });
       y -= lineHeight * 1.2;
       page.drawText(`Commission`, { x: margin, y, size: 10, font });
-      page.drawText(`First Year`, { x: margin + 200, y, size: 10, font });
-      page.drawText(`0.50%`, { x: margin + 350, y, size: 10, font });
+      page.drawText(`First Year 1.00%`, { x: margin + 200, y, size: 10, font });
+      page.drawText(`After 1st year 0.50% per annum`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight * 3;
 
       // AGREEMENT DETAILS
@@ -1100,11 +1109,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`AGREEMENT DETAILS`, { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
       page.drawText(`Agreement number:`, { x: margin, y, size: 10, font });
-      page.drawText(`36456453654`, { x: margin + 150, y, size: 10, font });
+      page.drawText(`OFDN-104-778-003`, { x: margin + 150, y, size: 10, font: boldFont });
+      page.drawText(`Elroy Meiring`, { x: margin + 350, y, size: 10, font: boldFont });
       y -= lineHeight;
       page.drawText(`Investor Name:`, { x: margin, y, size: 10, font });
       page.drawText(`${quotation.clientName}`, { x: margin + 150, y, size: 10, font });
+      y -= lineHeight * 2;
+
+      const acceptanceText = "I, the undersigned, by my signature below, hereby accept the above quotation and confirm that this quotation will form the basis of my agreement with the company. I confirm that the amount will be invested and I confirm herewith by my signature below that this will constitute a legal, valid and binding obligation to the issuer enforceable in accordance with its terms.";
+      const wordsAcceptance = acceptanceText.split(' ');
+      let currentLineAcceptance = '';
+      wordsAcceptance.forEach(word => {
+        const testLine = currentLineAcceptance ? `${currentLineAcceptance} ${word}` : word;
+        if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+          page.drawText(currentLineAcceptance, { x: margin, y, size: 9, font });
+          y -= 11;
+          currentLineAcceptance = word;
+        } else {
+          currentLineAcceptance = testLine;
+        }
+      });
+      page.drawText(currentLineAcceptance, { x: margin, y, size: 9, font });
+      y -= lineHeight * 3;
+
+      page.drawText(`Signature of Investor: ________________________`, { x: margin, y, size: 10, font: boldFont });
       y -= lineHeight * 4;
+
+      // Prepared By section
+      page.drawText(`Offer Prepared By:`, { x: margin, y, size: 10, font: boldFont });
+      y -= lineHeight;
+      page.drawText(`${quotation.preparedByName || 'Lionel Lottering'}`, { x: margin, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Cell: ${quotation.preparedByCell || '076 309 2590'}`, { x: margin, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Office: ${quotation.preparedByOffice || '0861 263 346'}`, { x: margin, y, size: 10, font });
+      y -= lineHeight;
+      page.drawText(`Email: ${quotation.preparedByEmail || 'lionell@opianfsgroup.com'}`, { x: margin, y, size: 10, font });
+
+      y -= lineHeight * 2;
 
       page.drawText(`Signature of investor: _________________________________`, { x: margin, y, size: 10, font });
       y -= lineHeight * 3;
