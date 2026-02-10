@@ -21,6 +21,12 @@ const INTEREST_RATES: Record<number, string[]> = {
   5: ["13.10", "13.20", "13.30", "13.40", "13.50"]
 };
 
+export { IncomeProviderForm };
+
+function IncomeProviderForm({ client }: { client: Client }) {
+  return <QuotationForm client={client} />;
+}
+
 export function QuotationForm({ client }: { client: Client }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
