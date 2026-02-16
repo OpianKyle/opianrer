@@ -1028,7 +1028,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         y -= 15;
       });
 
-      y -= lineHeight;
       // CLIENT SIGN Section
       page.drawText("Client Signature: _________________________________", { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
