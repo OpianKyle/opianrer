@@ -1029,6 +1029,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       y -= lineHeight;
+      // CLIENT SIGN Section
+      page.drawText("Client Signature: _________________________________", { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight * 1.5;
 
       const clientSignContent = [
         { title: "Validity:", text: "This offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company." },
@@ -1038,6 +1041,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { title: "Financial Advice:", text: "Limited financial advice has been given with this offer." },
         { title: "Benefits payable on death:", text: "In the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement." }
       ];
+
+      clientSignContent.forEach(section => {
+        if (y < 80) {
+          page = doc.addPage();
+          y = page.getSize().height - 50;
+        }
+        page.drawText(section.title, { x: margin, y, size: 10, font: boldFont });
+        y -= 12;
+
+        const words = section.text.split(' ');
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
+            page.drawText(currentLine, { x: margin, y, size: 9, font });
+            y -= 11;
+            currentLine = word;
+            if (y < 50) {
+              page = doc.addPage();
+              y = page.getSize().height - 50;
+            }
+          } else {
+            currentLine = testLine;
+          }
+        });
+        page.drawText(currentLine, { x: margin, y, size: 9, font });
+        y -= 15;
+      });
+
+      y -= lineHeight;
 
       // PLACEMENT AND ADMIN FEES
       if (y < 120) {
@@ -1084,39 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`After 1st year 0.50% per annum`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight * 2;
 
-      // CLIENT SIGN Section
-      page.drawText("CLIENT SIGN", { x: margin, y, size: 11, font: boldFont });
-      y -= lineHeight * 1.5;
-
-      clientSignContent.forEach(section => {
-        if (y < 80) {
-          page = doc.addPage();
-          y = page.getSize().height - 50;
-        }
-        page.drawText(section.title, { x: margin, y, size: 10, font: boldFont });
-        y -= 12;
-        
-        const words = section.text.split(' ');
-        let currentLine = '';
-        words.forEach(word => {
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-          if (font.widthOfTextAtSize(testLine, 9) > pageWidth - (margin * 2)) {
-            page.drawText(currentLine, { x: margin, y, size: 9, font });
-            y -= 11;
-            currentLine = word;
-            if (y < 50) {
-              page = doc.addPage();
-              y = page.getSize().height - 50;
-            }
-          } else {
-            currentLine = testLine;
-          }
-        });
-        page.drawText(currentLine, { x: margin, y, size: 9, font });
-        y -= 15;
-      });
-
-      y -= lineHeight;
+    
 
       page.drawText(`Signature of investor: _________________________________`, { x: margin, y, size: 10, font });
       y -= lineHeight * 3;
