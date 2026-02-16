@@ -1003,8 +1003,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "9. The applicant understands that if shares are issued under this agreement, the shares are issued for security only and are returnable when the applicant is paid back his invested capital.",
         "10. The applicant retains the option to convert their capital to fixed shares at exit date; whereafter the par value of the converted shares will be based on a comprehensive company's valuation at the time of exit.",
       ];
-      page.drawText(`Client Signature: ________________________`, { x: margin, y, size: 10, font: boldFont });
-      y -= lineHeight * 4;
       conditions.forEach(condition => {
         const words = condition.split(' ');
         let currentLine = '';
@@ -1041,30 +1039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { title: "Benefits payable on death:", text: "In the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement." }
       ];
 
-      // PLACEMENT AND ADMIN FEES
-      if (y < 120) {
-        page = doc.addPage();
-        y = page.getSize().height - 50;
-      }
-      page.drawText(`PLACEMENT AND ADMIN FEES`, { x: margin, y, size: 11, font: boldFont });
-      y -= lineHeight * 1.5;
-      page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
-      page.drawText(`Frequency`, { x: margin + 200, y, size: 10, font: boldFont });
-      page.drawText(`Percentage`, { x: margin + 350, y, size: 10, font: boldFont });
-      y -= lineHeight * 1.2;
-      page.drawText(`Placement fee`, { x: margin, y, size: 10, font });
-      page.drawText(`Once Off`, { x: margin + 200, y, size: 10, font });
-      page.drawText(`1.00%`, { x: margin + 350, y, size: 10, font });
-      y -= lineHeight;
-      page.drawText(`Admin fees`, { x: margin, y, size: 10, font });
-      page.drawText(`First 3 years`, { x: margin + 200, y, size: 10, font });
-      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
-      y -= lineHeight;
-      page.drawText(`Management Fees`, { x: margin, y, size: 10, font });
-      page.drawText(`First 3 years`, { x: margin + 200, y, size: 10, font });
-      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
-      y -= lineHeight * 2;
-
+      // COMMISSION
       if (y < 100) {
         page = doc.addPage();
         y = page.getSize().height - 50;
@@ -1080,7 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page.drawText(`After 1st year 0.50% per annum`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight * 2;
 
-      // CLIENT SIGN Section - Validity, Taxation, Fees, Suitability, Financial Advice, Benefits on Death
+      // CLIENT SIGN Section
       page.drawText("CLIENT SIGN", { x: margin, y, size: 11, font: boldFont });
       y -= lineHeight * 1.5;
 
@@ -1707,55 +1682,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       addLogos(page3);
       yPos = 750;
 
-      // Validity
-      page3.drawText("VALIDITY", { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 20;
-      const validityText = "This offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, a new offer must be issued and duly executed before the terms can be formally accepted by the company.";
-      yPos = drawJustifiedText(page3, validityText, leftMargin, yPos, contentWidth, font, 10, 15);
-      yPos -= 20;
-
-      // Taxation
-      page3.drawText("Taxation:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 20;
-      page3.drawText("Taxation is not addressed in this plan. Taxation should be discussed with a tax adviser.", { x: leftMargin, y: yPos, size: 10, font });
-      yPos -= 30;
-
-      // Fees
-      page3.drawText("Fees:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 20;
-      page3.drawText("This offer details the fees payable under the contract, which encompass deal placement fees. (commissions)", { x: leftMargin, y: yPos, size: 10, font });
-      yPos -= 30;
-
-      // Suitability
-      page3.drawText("Suitability:", { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 20;
-      const suitabilityText = "The client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and and facilitate the successful execution of this agreement.";
-      yPos = drawJustifiedText(page3, suitabilityText, leftMargin, yPos, contentWidth, font, 10, 15);
-      yPos -= 40;
-
-      // PLACEMENT AND ADMIN FEES
-      if (yPos < 120) {
-        page3 = pdfDoc.addPage([595.28, 841.89]);
-        addFooter(page3);
-        addLogos(page3);
-        yPos = 750;
-      }
-      page3.drawText(`PLACEMENT AND ADMIN FEES`, { x: leftMargin, y: yPos, size: 11, font: boldFont });
-      yPos -= 15 * 1.5;
-      
-      const feeTable = [
-        ["Placement fee", "Once Off", "1.00% once off"],
-        ["Admin Fees", "Once Off", "3.50%"]
-      ];
-
-      feeTable.forEach(([desc, freq, pct]) => {
-        page3.drawRectangle({ x: leftMargin, y: yPos - 5, width: contentWidth, height: 20, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-        page3.drawText(desc, { x: leftMargin + 5, y: yPos, size: 10, font });
-        page3.drawText(freq, { x: leftMargin + 200, y: yPos, size: 10, font });
-        page3.drawText(pct, { x: leftMargin + 350, y: yPos, size: 10, font });
-        yPos -= 20;
-      });
-
       yPos -= 30;
 
       // CLIENT SIGN Section - Validity, Taxation, Fees, Suitability, Financial Advice, Benefits on Death
@@ -1787,13 +1713,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       yPos -= 20;
 
-      yPos -= 30;
       page3.drawText("Commission", { x: leftMargin, y: yPos, size: 11, font: boldFont });
       yPos -= 20;
       page3.drawRectangle({ x: leftMargin, y: yPos - 5, width: contentWidth, height: 20, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page3.drawText("Commission", { x: leftMargin + 5, y: yPos, size: 10, font });
-      page3.drawText("First Year 0.50%", { x: leftMargin + 200, y: yPos, size: 10, font });
-      page3.drawText("0.50%", { x: leftMargin + 350, y: yPos, size: 10, font });
+      page3.drawText("First Year 1.00%", { x: leftMargin + 200, y: yPos, size: 10, font });
+      page3.drawText("After 1st year 0.50% per annum", { x: leftMargin + 350, y: yPos, size: 10, font });
       yPos -= 40;
 
       // AGREEMENT DETAILS
