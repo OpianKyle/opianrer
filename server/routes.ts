@@ -1034,10 +1034,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { title: "Validity:", text: "This offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company." },
         { title: "Taxation:", text: "Taxation is not addressed in this plan. Taxation should be discussed with a tax adviser." },
         { title: "Fees:", text: "This offer details the fees payable under the contract, which encompass deal placement fees. (commissions)" },
-        { title: "Suitability:", text: "The client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and and facilitate the successful execution of this agreement." },
+        { title: "Suitability:", text: "The client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and facilitate the successful execution of this agreement." },
         { title: "Financial Advice:", text: "Limited financial advice has been given with this offer." },
         { title: "Benefits payable on death:", text: "In the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement." }
       ];
+
+      // PLACEMENT AND ADMIN FEES
+      if (y < 120) {
+        page = doc.addPage();
+        y = page.getSize().height - 50;
+      }
+      page.drawText(`Placement and Admin fees`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight;
+      page.drawText(`The Placement and Admin fees amount shown below are paid nett of VAT`, { x: margin, y, size: 9, font });
+      y -= lineHeight * 1.5;
+
+      page.drawText(`Placement Fees`, { x: margin + 250, y, size: 10, font: boldFont });
+      y -= lineHeight * 1.2;
+
+      page.drawText(`Placement fee`, { x: margin + 50, y, size: 10, font });
+      page.drawText(`1.00% once off`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight;
+
+      page.drawText(`Admin fees`, { x: margin + 50, y, size: 10, font });
+      page.drawText(`First 3 years`, { x: margin + 250, y, size: 10, font });
+      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight;
+
+      page.drawText(`Management Fees`, { x: margin + 50, y, size: 10, font });
+      page.drawText(`First 3 years`, { x: margin + 250, y, size: 10, font });
+      page.drawText(`0.75% per annum`, { x: margin + 350, y, size: 10, font });
+      y -= lineHeight * 2;
 
       // COMMISSION
       if (y < 100) {
@@ -1045,13 +1072,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         y = page.getSize().height - 50;
       }
       page.drawText(`COMMISSION`, { x: margin, y, size: 11, font: boldFont });
+      y -= lineHeight;
+      page.drawText(`The Commission amount shown below are paid nett of VAT`, { x: margin, y, size: 9, font });
       y -= lineHeight * 1.5;
-      page.drawText(`Description`, { x: margin, y, size: 10, font: boldFont });
-      page.drawText(`Frequency`, { x: margin + 200, y, size: 10, font: boldFont });
-      page.drawText(`Percentage`, { x: margin + 350, y, size: 10, font: boldFont });
+
+      page.drawText(`Commission`, { x: margin + 250, y, size: 10, font: boldFont });
       y -= lineHeight * 1.2;
-      page.drawText(`Commission`, { x: margin, y, size: 10, font });
-      page.drawText(`First Year 1.00%`, { x: margin + 200, y, size: 10, font });
+
+      page.drawText(`Commission`, { x: margin + 50, y, size: 10, font });
+      page.drawText(`First Year 1.00%`, { x: margin + 250, y, size: 10, font });
       page.drawText(`After 1st year 0.50% per annum`, { x: margin + 350, y, size: 10, font });
       y -= lineHeight * 2;
 
@@ -1498,48 +1527,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page1.drawText(`${client.email || ""}`, { x: leftMargin + 150, y: yPos, size: 10, font });
       yPos -= 30;
 
-      // CLIENT SIGN section for page1
-      const clientSignInfo = "CLIENT SIGN\n\nValidity:\nThis offer remains valid for a period of 14 days from the date of issuance. It is imperative that the receipt of funds occurs within this specific time frame. All required documentation must be completed, and funds transfers finalized, on or before the expiration of the offer's validity period. Should any information remain outstanding or incomplete, funds will be processed, but a new offer must be issued and duly executed before the terms can be formally accepted by the company.\n\nTaxation:\nTaxation is not addressed in this plan. Taxation should be discussed with a tax adviser.\n\nFees:\nThis offer details the fees payable under the contract, which encompass deal placement fees. (commissions)\n\nSuitability:\nThe client's access to capital are restricted for the duration of this agreement. As such, it is imperative that the client maintains a financial position robust enough to support the terms and obligations outlined herein, such term also being the potential fluctuation of income drawn from the investment. Ensuring financial stability will safeguard the client's interest and facilitate the successful execution of this agreement.\n\nFinancial Advice:\nLimited financial advice has been given with this offer.\n\nBenefits payable on death:\nIn the event of your passing during the term of this agreement, the benefits of this agreement shall be transferred to your designated beneficiaries or your estate until the end of the agreement.";
-
-      const csLines = clientSignInfo.split('\n');
-      csLines.forEach(line => {
-        if (!line.trim()) {
-          yPos -= 10;
-          return;
-        }
-        const isHeader = line === "CLIENT SIGN" || line.endsWith(':');
-        const fontSize = isHeader ? 10 : 9;
-        const currentFont = isHeader ? boldFont : font;
-
-        const words = line.split(' ');
-        let currentLine = '';
-        words.forEach(word => {
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-          if (currentFont.widthOfTextAtSize(testLine, fontSize) > contentWidth) {
-            if (yPos < 70) {
-              page1 = pdfDoc.addPage([595.28, 841.89]);
-              addFooter(page1);
-              addLogos(page1);
-              yPos = 750;
-            }
-            page1.drawText(currentLine, { x: leftMargin, y: yPos, size: fontSize, font: currentFont });
-            yPos -= fontSize + 2;
-            currentLine = word;
-          } else {
-            currentLine = testLine;
-          }
-        });
-        if (yPos < 70) {
-          page1 = pdfDoc.addPage([595.28, 841.89]);
-          addFooter(page1);
-          addLogos(page1);
-          yPos = 750;
-        }
-        page1.drawText(currentLine, { x: leftMargin, y: yPos, size: fontSize, font: currentFont });
-        yPos -= fontSize + 2;
-      });
-      yPos -= 20;
-
       page1.drawText(`Dear ${quotation.clientName}`, { x: leftMargin, y: yPos, size: 11, font });
 
       yPos -= 20;
@@ -1720,6 +1707,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page3.drawText("First Year 1.00%", { x: leftMargin + 200, y: yPos, size: 10, font });
       page3.drawText("After 1st year 0.50% per annum", { x: leftMargin + 350, y: yPos, size: 10, font });
       yPos -= 40;
+      
+       // Prepared By section
+        page3.drawText(`Offer Prepared By:`, { x: leftMargin, y: yPos, size: 10, font: boldFont });
+        yPos -= 15;
+        page3.drawText(`${quotation.preparedByName || 'Lionel Lottering'}`, { x: leftMargin, y: yPos, size: 10, font });
+        yPos -= 15;
+        page3.drawText(`Cell: ${quotation.preparedByCell || '076 309 2590'}`, { x: leftMargin, y: yPos, size: 10, font });
+        yPos -= 15;
+        page3.drawText(`Office: ${quotation.preparedByOffice || '0861 263 346'}`, { x: leftMargin, y: yPos, size: 10, font });
+        yPos -= 15;
+        page3.drawText(`Email: ${quotation.preparedByEmail || 'lionell@opianfsgroup.com'}`, { x: leftMargin, y: yPos, size: 10, font });
 
       // AGREEMENT DETAILS
       if (yPos < 150) {
@@ -1745,17 +1743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       page3.drawText(`Signature of Investor: ________________________`, { x: leftMargin, y: yPos, size: 10, font: boldFont });
       yPos -= 15 * 3;
 
-      // Prepared By section
-      page3.drawText(`Offer Prepared By:`, { x: leftMargin, y: yPos, size: 10, font: boldFont });
-      yPos -= 15;
-      page3.drawText(`${quotation.preparedByName || 'Lionel Lottering'}`, { x: leftMargin, y: yPos, size: 10, font });
-      yPos -= 15;
-      page3.drawText(`Cell: ${quotation.preparedByCell || '076 309 2590'}`, { x: leftMargin, y: yPos, size: 10, font });
-      yPos -= 15;
-      page3.drawText(`Office: ${quotation.preparedByOffice || '0861 263 346'}`, { x: leftMargin, y: yPos, size: 10, font });
-      yPos -= 15;
-      page3.drawText(`Email: ${quotation.preparedByEmail || 'lionell@opianfsgroup.com'}`, { x: leftMargin, y: yPos, size: 10, font });
-
+ 
 
       const pdfBytes = await pdfDoc.save();
       const fileName = `Proposal_${quotation.clientName.replace(/\s+/g, "_")}_${Date.now()}.pdf`;
